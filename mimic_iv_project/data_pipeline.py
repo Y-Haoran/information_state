@@ -520,6 +520,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--build-sequence", action="store_true")
     parser.add_argument("--build-tabular", action="store_true")
     parser.add_argument("--project-root", type=str, default=None)
+    parser.add_argument("--raw-root", type=str, default=None)
     parser.add_argument("--history-hours", type=int, default=24)
     parser.add_argument("--future-hours", type=int, default=6)
     parser.add_argument("--bin-hours", type=int, default=1)
@@ -531,8 +532,10 @@ def parse_args() -> argparse.Namespace:
 
 def make_config(args: argparse.Namespace) -> ProjectConfig:
     project_root = Path(args.project_root).resolve() if args.project_root else None
+    raw_root = Path(args.raw_root).resolve() if args.raw_root else None
     return ProjectConfig(
         project_root=project_root or ProjectConfig().project_root,
+        raw_root=raw_root,
         history_hours=args.history_hours,
         future_hours=args.future_hours,
         bin_hours=args.bin_hours,

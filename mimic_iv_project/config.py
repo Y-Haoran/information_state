@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+import os
 from pathlib import Path
 
 
@@ -18,7 +19,7 @@ class FeatureSpec:
 @dataclass
 class ProjectConfig:
     project_root: Path = field(default_factory=lambda: Path(__file__).resolve().parents[1])
-    raw_root: Path = field(default_factory=lambda: Path(__file__).resolve().parents[2])
+    raw_root: Path | None = None
     history_hours: int = 24
     future_hours: int = 6
     bin_hours: int = 1
@@ -30,6 +31,14 @@ class ProjectConfig:
     chunk_size: int = 200_000
     max_stays: int | None = None
     max_chunks: int | None = None
+
+    def __post_init__(self) -> None:
+        self.project_root = Path(self.project_root).resolve()
+        if self.raw_root is None:
+            env_root = os.environ.get("MIMIC_IV_ROOT")
+            self.raw_root = Path(env_root).resolve() if env_root else self.project_root / "data"
+        else:
+            self.raw_root = Path(self.raw_root).resolve()
 
     @property
     def hosp_dir(self) -> Path:
