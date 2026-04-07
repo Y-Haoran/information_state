@@ -810,6 +810,9 @@ def main() -> None:
         "provisional_label",
         "label_source",
         "target_true_bsi",
+        "row_count",
+        "unique_org_count",
+        "prior_same_organism_positive_7d",
     }
     feature_columns = [col for col in features.columns if col not in excluded]
     organism_feature_columns = [

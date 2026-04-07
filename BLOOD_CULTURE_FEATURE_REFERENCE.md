@@ -25,22 +25,20 @@ The synthetic file is only for schema illustration. It is **not** real patient d
 
 For the first binary baseline:
 
-- `target_true_bsi = 0` means `likely_contaminant`
-- `target_true_bsi = 1` means `likely_true_bsi`
+- `target_true_bsi = 0` means `probable_contaminant_or_low_significance_alert`
+- `target_true_bsi = 1` means `probable_clinically_significant_bsi_alert`
 - `target_true_bsi = NaN` means `indeterminate`
 
 Only the high-confidence binary subset is used for the first baseline model.
 
 ## Feature groups
 
-The current tabular baseline uses `121` training features.
+The current tabular baseline uses `118` training features.
 
-### 1. Alert context: 9 features
+### 1. Alert context: 7 features
 
 - `has_storetime`
 - `has_charttime`
-- `row_count`
-- `unique_org_count`
 - `in_icu_at_alert`
 - `anchor_age`
 - `alert_hours_from_admit`
@@ -61,13 +59,12 @@ The current tabular baseline uses `121` training features.
 - `org_polymicrobial_gp`
 - `org_other_gp`
 
-### 3. Prior microbiology history: 5 features
+### 3. Prior microbiology history: 4 features
 
 - `prior_positive_specimens_24h`
 - `prior_positive_specimens_7d`
 - `prior_gp_positive_specimens_24h`
 - `prior_gp_positive_specimens_7d`
-- `prior_same_organism_positive_7d`
 
 ### 4. Lab summaries from the 24h lookback: 35 features
 
