@@ -1,5 +1,18 @@
 # MIMIC-IV EDA For Gram-Positive Blood-Culture Label Validity
 
+## Important Note
+
+This report describes the earlier exploratory label design.
+
+The repo now has a newer label builder that uses a more clinically meaningful rule:
+
+- organism pattern
+- repeat blood-culture evidence
+- approximate multiple-set evidence
+- post-alert antibiotic continuation
+
+So this file is still useful for cohort sizing and early reasoning, but it is **not** the final current label definition.
+
 ## Project question
 
 At the time a blood culture first becomes positive, can we predict whether a Gram-positive result is more likely to represent true bloodstream infection versus likely contamination, using only information available up to that alert time?

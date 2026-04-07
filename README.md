@@ -1,222 +1,150 @@
-# 48-Hour Broad-Spectrum Antibiotic Review In MIMIC-IV
+# Blood Culture Alert Project In MIMIC-IV
 
-## What Question Are We Tackling?
+## Main Question
 
-This project asks one clear clinical question:
+When a first Gram-positive blood-culture alert appears, can we tell whether it is:
 
-At 48 hours after starting empiric broad-spectrum antibiotics in ICU patients, is continued broad-spectrum therapy still justified?
+- a **clinically important bloodstream infection alert**
+- or a **likely contaminant / low-significance alert**
 
-This is meant to support antibiotic stewardship review, not to replace a doctor.
+This project is meant to help with early review and prioritization. It is not an automatic treatment tool.
 
-The intended model output is:
+## Very Short Summary
 
-- `continue broad-spectrum likely justified`
-- `high-priority candidate for de-escalation review`
+This repo now has three main pieces for the blood-culture project:
 
-## Related EDA Reports
+1. a raw blood-culture subset from `microbiologyevents.csv`
+2. a grouped one-row-per-specimen table
+3. a first clinically meaningful label set for first Gram-positive alerts
 
-This repo now also includes exploratory analyses for adjacent MIMIC-IV clinical prediction questions:
+## Best Files To Open First
 
-- [EDA_BLOOD_CULTURE_LABEL_VALIDITY.md](EDA_BLOOD_CULTURE_LABEL_VALIDITY.md)
-  - asks whether a first Gram-positive positive blood-culture alert is more likely true bloodstream infection or contamination
-- [BASELINE_BLOOD_CULTURE_RESULTS.md](BASELINE_BLOOD_CULTURE_RESULTS.md)
-  - reports Logistic Regression and XGBoost baseline results for the high-confidence blood-culture subset, including a rerun with pre-alert ICU vitals and organ-support proxies
-- [BLOOD_CULTURE_FEATURE_REFERENCE.md](BLOOD_CULTURE_FEATURE_REFERENCE.md)
-  - lists the current 121-feature training schema and links to a synthetic example dataset with a few hundred rows
-- [EDA_ANTIBIOTIC_PROJECT.md](EDA_ANTIBIOTIC_PROJECT.md)
-  - sizes the original 48-hour antibiotic-review cohort
+If you want the simplest overview, start here:
 
-## Why This Question?
+- [CLINICIAN_OVERVIEW.md](CLINICIAN_OVERVIEW.md)
 
-This is a cleaner stewardship question than asking whether the very first empiric choice was correct.
+If you want to look at the actual local dataset files, these are the key ones:
 
-Why 48 hours:
+- raw blood-culture rows:
+  - `artifacts/blood_culture/blood_culture_rows.csv`
+- grouped specimen table:
+  - `artifacts/blood_culture/blood_culture_specimen_subset.csv`
+- small preview of the grouped table:
+  - `artifacts/blood_culture/blood_culture_specimen_subset_preview.csv`
+- first Gram-positive alert dataset with the current label:
+  - `artifacts/blood_culture/first_gp_alert_dataset.csv`
+- current label summary:
+  - `artifacts/blood_culture/blood_culture_label_metadata.json`
 
-- it matches real antibiotic review practice better than 0 hours
-- it is different from the older "early empiric appropriateness" framing
-- by 48 hours, cultures, vitals, labs, and response to treatment are more informative
+## What One Row Means
 
-## What Data Are Available In MIMIC-IV?
+There are two different dataset styles in this project.
 
-MIMIC-IV has the main pieces needed for a first version of this project:
+### 1. Raw row-level microbiology table
 
-- antibiotic administration
-  - `hosp/emar.csv`
-  - `hosp/emar_detail.csv`
-- medication orders and scheduling
-  - `hosp/pharmacy.csv`
-  - `hosp/prescriptions.csv`
-  - `hosp/poe.csv`
-- microbiology and susceptibility information
-  - `hosp/microbiologyevents.csv`
-- ICU physiology and organ support
-  - `icu/chartevents.csv.gz`
-  - `icu/inputevents.csv.gz`
-  - `icu/outputevents.csv.gz`
-- hospital labs and admission context
-  - `hosp/labevents.csv`
-  - `hosp/admissions.csv`
-  - `hosp/patients.csv`
+File:
 
-So the data are available for:
+- `artifacts/blood_culture/blood_culture_rows.csv`
 
-- what antibiotic was given
-- when it was given
-- whether broad-spectrum therapy was continued
-- what cultures showed
-- how the patient was responding by 48 hours
+Meaning:
 
-## What This Repo Contains Right Now
+- one row = one microbiology row from `microbiologyevents.csv`
+- this is close to the original MIMIC-IV table
+- one specimen can appear many times
 
-This repo already has the core modeling scaffold:
+### 2. Grouped specimen-level table
 
-- MIMIC-IV cohort building
-- time-series feature extraction
-- tabular baseline training
-- transformer training
-- a patient-specific decay transformer for irregular ICU data
+File:
 
-This part is already coded and smoke-tested.
+- `artifacts/blood_culture/blood_culture_specimen_subset.csv`
 
-## What Has Already Been Achieved
+Meaning:
 
-The current codebase already does these things end to end:
+- one row = one `micro_specimen_id`
+- rows from the same specimen are grouped together
+- this is easier to use for modeling and review
 
-- builds a leakage-safe ICU cohort
-- creates hourly binned sequence features
-- creates tabular summary features
-- trains logistic regression, random forest, and XGBoost baselines
-- trains a transformer model
+## Current Label
 
-So the repo is not empty or only an idea. The pipeline exists.
+The old simple label based only on organism type and repeat positivity has now been replaced in the first-alert dataset.
 
-## What Still Needs To Be Added For The Final Antibiotic Project
+The current label is:
 
-The antibiotic-specific part is the next step.
+- `probable_clinically_significant_bsi_alert`
+- `probable_contaminant_or_low_significance_alert`
+- `indeterminate`
 
-Still to implement:
+Plain meaning:
 
-- define the broad-spectrum antibiotic list
-- identify empiric antibiotic start time
-- build the 48-hour review snapshot
-- define the 72-hour outcome label
-- classify `continued` versus `narrowed / stopped / switched off broad-spectrum`
-- review edge cases with a doctor or antimicrobial pharmacist
+- `probable_clinically_significant_bsi_alert`
+  - more likely a real and clinically important infection signal
+- `probable_contaminant_or_low_significance_alert`
+  - more likely a contaminant or a low-significance alert
+- `indeterminate`
+  - not clear enough to trust for first-pass model training
+
+## How The Current Label Is Built
+
+The current label uses:
+
+- organism pattern
+- repeat blood-culture evidence within `48h`
+- whether there were multiple blood-culture specimens in the episode
+- post-alert antibiotic continuation in the `24-72h` window
+
+It does **not** use pre-alert vitals or labs inside the label itself.
+
+That is important, because the model should learn from those inputs, not have them baked into the label.
+
+## Current Counts
+
+Current first Gram-positive alert dataset:
+
+- total rows: `5,546`
+- `probable_clinically_significant_bsi_alert`: `1,246`
+- `probable_contaminant_or_low_significance_alert`: `1,260`
+- `indeterminate`: `3,040`
+- high-confidence binary subset: `2,506`
+
+## Important Caution
+
+The blood-culture labels are still research labels.
 
 That means:
 
-- the modeling scaffold is built
-- the antibiotic stewardship label logic is the main remaining project-specific task
+- they are clinically motivated
+- they are better than the older simple organism-only rule
+- but they are still **not** a gold-standard manual review label
 
-## First Study Design
+## Model Results
 
-The clean first version is:
+The current baseline results file is:
 
-- cohort: ICU patients started on empiric broad-spectrum antibiotics
-- input window: data available up to 48 hours after antibiotic start
-- output window: what happens by 72 hours
+- [BASELINE_BLOOD_CULTURE_RESULTS.md](BASELINE_BLOOD_CULTURE_RESULTS.md)
 
-First label:
+Important:
 
-- positive class: broad-spectrum therapy is continued past the 48-hour review point
-- negative class: therapy is narrowed, stopped, or switched off broad-spectrum by 72 hours
+- that file currently describes the **older label version**
+- it should be treated as historical / outdated
+- the baselines need to be rerun on the new label set
 
-## What We Want The Model To Be
+## Other Helpful Files
 
-This should be a clinician-facing review tool, not an automatic stop order.
+- [EDA_BLOOD_CULTURE_LABEL_VALIDITY.md](EDA_BLOOD_CULTURE_LABEL_VALIDITY.md)
+  - early blood-culture EDA and cohort sizing
+- [BLOOD_CULTURE_FEATURE_REFERENCE.md](BLOOD_CULTURE_FEATURE_REFERENCE.md)
+  - feature list for the earlier baseline feature table
+- [scripts/build_blood_culture_specimen_subset.py](scripts/build_blood_culture_specimen_subset.py)
+  - builds the grouped specimen-level subset
+- [scripts/build_blood_culture_labels.py](scripts/build_blood_culture_labels.py)
+  - builds the current clinical-significance labels
+- [scripts/build_blood_culture_features.py](scripts/build_blood_culture_features.py)
+  - builds the tabular model features
 
-The most realistic use is:
+## Current Next Step
 
-- flag patients for de-escalation review
-- help stewardship teams prioritize review
-- provide decision support alongside clinical judgement
+The next correct step is:
 
-## Why The Modeling Approach Could Be Effective
-
-The repo compares two levels of model:
-
-- simple baselines
-- a transformer that handles irregular ICU time series better
-
-The transformer idea is still useful here because antibiotic review depends on time-varying evidence:
-
-- fever trend
-- blood pressure trend
-- lactate trend
-- white cell count trend
-- culture results appearing over time
-- changing organ support needs
-
-The patient-specific decay module is meant to help because older observations should not have equal importance for every patient.
-
-## Important Limitations
-
-This repo does not yet claim a final clinical model.
-
-Current limitations:
-
-- antibiotic-specific labels are not fully implemented yet
-- smoke-test results are only pipeline checks
-- there is no clinician-reviewed gold-standard label set yet
-- no external validation has been done
-- this is a research prototype, not a prescribing tool
-
-## Best Way To Read The Repo
-
-If you are new here, think of the repo in two layers:
-
-1. already built:
-   the MIMIC-IV modeling engine
-2. next focused step:
-   the 48-hour antibiotic stewardship cohort and labels
-
-## Files
-
-- `mimic_iv_project/config.py`
-  - paths and base feature setup
-- `mimic_iv_project/data_pipeline.py`
-  - cohort and dataset construction
-- `mimic_iv_project/train_baselines.py`
-  - tabular baselines
-- `mimic_iv_project/models.py`
-  - patient-specific decay transformer
-- `mimic_iv_project/train_transformer.py`
-  - transformer training
-- `PROJECT_BRIEF.md`
-  - one-page description of the antibiotic project
-
-## Quick Start
-
-Install dependencies:
-
-```bash
-python3 -m pip install --user -r requirements.txt
-```
-
-Point the code to a MIMIC-IV root directory containing `hosp/` and `icu/`:
-
-```bash
-export MIMIC_IV_ROOT=/path/to/mimic_root
-```
-
-Run a small smoke build:
-
-```bash
-PYTHONPATH=. python3 -m mimic_iv_project.data_pipeline --build-all --max-stays 256 --max-chunks 4 --project-root ./_smoke
-```
-
-Train the current baselines:
-
-```bash
-PYTHONPATH=. python3 -m mimic_iv_project.train_baselines --project-root ./_smoke
-```
-
-Train the current transformer:
-
-```bash
-PYTHONPATH=. python3 -m mimic_iv_project.train_transformer --project-root ./_smoke --epochs 5 --batch-size 32
-```
-
-## More Detail
-
-See [PROJECT_BRIEF.md](PROJECT_BRIEF.md) for the project aim, label definition, available MIMIC-IV tables, and next implementation steps.
+1. rebuild the feature table using the new labels
+2. rerun Logistic Regression and XGBoost
+3. update the baseline results file with the new label set

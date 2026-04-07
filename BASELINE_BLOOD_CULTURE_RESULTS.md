@@ -1,5 +1,20 @@
 # Baseline Results For Gram-Positive Blood-Culture Labels
 
+## Important Note
+
+This file is now **out of date**.
+
+Reason:
+
+- these results were produced with the **older label version**
+- the repo now uses a newer clinical-significance label:
+  - `probable_clinically_significant_bsi_alert`
+  - `probable_contaminant_or_low_significance_alert`
+
+So please read this file as a historical baseline only.
+
+The models need to be rerun on the new label set.
+
 ## What was trained
 
 Two baseline models were trained on the high-confidence binary subset:
