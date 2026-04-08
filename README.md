@@ -9,6 +9,20 @@ At the time of the **first Gram-positive blood-culture alert** in a hospital adm
 
 This repo is centered on that one clean baseline task.
 
+## Motivation And Hypothesis
+
+The motivation is simple:
+
+- the same Gram-positive blood-culture alert can mean a real bloodstream infection or a contaminant / low-significance signal
+- that distinction matters for antibiotic escalation, microbiology review, and clinical attention
+
+Our working hypothesis is the **physiological footprint hypothesis**:
+
+- clinically significant alerts leave a measurable pre-alert footprint in routine clinical data
+- likely contaminants do not produce the same pattern
+
+So the main baseline asks whether we can separate those two groups using only pre-alert features such as age, acuity, recent labs, recent vitals, and prior microbiology history.
+
 ## What One Row Means
 
 The main modeling dataset uses:
@@ -53,6 +67,7 @@ It does **not** use organism-family identity as a predictor.
 Main files:
 
 - clinician summary: [CLINICIAN_OVERVIEW.md](CLINICIAN_OVERVIEW.md)
+- short project report: [reports/blood_culture_first_alert_project_report.md](reports/blood_culture_first_alert_project_report.md)
 - baseline results: [BASELINE_BLOOD_CULTURE_RESULTS.md](BASELINE_BLOOD_CULTURE_RESULTS.md)
 - feature reference: [BLOOD_CULTURE_FEATURE_REFERENCE.md](BLOOD_CULTURE_FEATURE_REFERENCE.md)
 - explainability summary: [PRIMARY_BASELINE_EXPLAINABILITY.md](PRIMARY_BASELINE_EXPLAINABILITY.md)
@@ -75,6 +90,13 @@ Secondary sensitivity analysis:
 - 18-feature pruned XGBoost: AUROC `0.808`, F1 `0.756`
 
 This smaller model stayed very close to the 41-feature baseline, which is a useful robustness check.
+
+## Biggest Findings
+
+- the clean no-organism first-alert model still shows useful signal with AUROC around `0.80`
+- the top features are mostly platelet, creatinine, age, ICU acuity, and temperature-related features
+- the 18-feature pruned model stayed close to the 41-feature model, so the signal is not dependent on a very large feature table
+- the project now has a clinically interpretable narrative that links label design, model performance, and feature importance
 
 Dataset highlights:
 

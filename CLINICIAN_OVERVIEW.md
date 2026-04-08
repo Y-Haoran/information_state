@@ -11,6 +11,19 @@ When the **first Gram-positive blood-culture alert** appears in an admission, is
 
 The goal is early review support, not automatic treatment.
 
+## Why We Think This Can Work
+
+Our main hypothesis is:
+
+- a clinically important Gram-positive alert often comes with a different patient-state pattern than a contaminant
+
+In other words, true clinically important alerts may already show a measurable pre-alert footprint in:
+
+- platelet and creatinine behavior
+- temperature and other vital signs
+- ICU-level support such as vasopressors or ventilation
+- recent blood-culture history
+
 ## What One Case Means
 
 One model row means:
@@ -74,6 +87,11 @@ In the current baseline, the strongest signals are mostly:
 - temperature features
 
 So the model appears to be using general illness severity and host-response pattern, not only one single measurement.
+
+That is one of the main findings of the project:
+
+- the model still works without using organism identity
+- the strongest signal comes from patient physiology and acuity
 
 ## Best Files To Open
 
