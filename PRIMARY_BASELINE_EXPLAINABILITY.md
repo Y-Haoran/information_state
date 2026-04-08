@@ -86,6 +86,10 @@ Files:
 - [reports/blood_culture_primary_xgb_shap_importance.csv](reports/blood_culture_primary_xgb_shap_importance.csv)
 - [reports/blood_culture_primary_xgb_shap_importance.png](reports/blood_culture_primary_xgb_shap_importance.png)
 
+Figure:
+
+![XGBoost SHAP importance](figures/primary_baseline/xgb_shap_importance.png)
+
 ## Logistic Regression Feature Ranking
 
 Top features by absolute logistic coefficient:
@@ -111,6 +115,10 @@ Files:
 - [reports/blood_culture_primary_logistic_coefficients.csv](reports/blood_culture_primary_logistic_coefficients.csv)
 - [reports/blood_culture_primary_logistic_coefficients.png](reports/blood_culture_primary_logistic_coefficients.png)
 
+Figure:
+
+![Logistic regression coefficient ranking](figures/primary_baseline/logistic_coefficients.png)
+
 ## Correlation Findings
 
 The strongest correlations are not surprising. They mainly show feature redundancy inside the compact set.
@@ -134,6 +142,10 @@ Files:
 - [reports/blood_culture_primary_feature_correlation_pairs.csv](reports/blood_culture_primary_feature_correlation_pairs.csv)
 - [reports/blood_culture_primary_feature_correlation_matrix.csv](reports/blood_culture_primary_feature_correlation_matrix.csv)
 - [reports/blood_culture_primary_feature_correlation.png](reports/blood_culture_primary_feature_correlation.png)
+
+Figure:
+
+![Primary feature correlation matrix](figures/primary_baseline/feature_correlation.png)
 
 ## What This Suggests For A Stronger ML Pipeline
 

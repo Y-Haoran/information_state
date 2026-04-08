@@ -56,6 +56,7 @@ Main files:
 - baseline results: [BASELINE_BLOOD_CULTURE_RESULTS.md](BASELINE_BLOOD_CULTURE_RESULTS.md)
 - feature reference: [BLOOD_CULTURE_FEATURE_REFERENCE.md](BLOOD_CULTURE_FEATURE_REFERENCE.md)
 - explainability summary: [PRIMARY_BASELINE_EXPLAINABILITY.md](PRIMARY_BASELINE_EXPLAINABILITY.md)
+- figures folder: [figures/primary_baseline](figures/primary_baseline)
 - clean baseline metrics JSON: [reports/blood_culture_primary_feature_metrics.json](reports/blood_culture_primary_feature_metrics.json)
 
 ## Main Result
@@ -71,6 +72,10 @@ Dataset highlights:
 
 - unique patients in the full first-alert dataset: `5,021`
 - unique patients in the high-confidence binary subset: `2,369`
+
+Main figures:
+
+![XGBoost SHAP importance](figures/primary_baseline/xgb_shap_importance.png)
 
 ## Data Pipeline Files
 
