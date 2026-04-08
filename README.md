@@ -58,6 +58,7 @@ Main files:
 - explainability summary: [PRIMARY_BASELINE_EXPLAINABILITY.md](PRIMARY_BASELINE_EXPLAINABILITY.md)
 - figures folder: [figures/primary_baseline](figures/primary_baseline)
 - clean baseline metrics JSON: [reports/blood_culture_primary_feature_metrics.json](reports/blood_culture_primary_feature_metrics.json)
+- pruned 18-feature metrics JSON: [reports/blood_culture_important_pruned_metrics.json](reports/blood_culture_important_pruned_metrics.json)
 
 ## Main Result
 
@@ -67,6 +68,13 @@ Held-out test performance for the clean 41-feature baseline:
 - XGBoost: AUROC `0.809`, F1 `0.761`
 
 This is the main result that should be read first.
+
+Secondary sensitivity analysis:
+
+- 18-feature pruned Logistic Regression: AUROC `0.791`, F1 `0.771`
+- 18-feature pruned XGBoost: AUROC `0.808`, F1 `0.756`
+
+This smaller model stayed very close to the 41-feature baseline, which is a useful robustness check.
 
 Dataset highlights:
 
@@ -91,6 +99,7 @@ Main scripts:
 - label builder: [scripts/build_blood_culture_labels.py](scripts/build_blood_culture_labels.py)
 - feature builder: [scripts/build_blood_culture_features.py](scripts/build_blood_culture_features.py)
 - baseline trainer: [scripts/train_blood_culture_baselines.py](scripts/train_blood_culture_baselines.py)
+- pruned-feature trainer: [scripts/train_pruned_feature_baseline.py](scripts/train_pruned_feature_baseline.py)
 
 ## Supporting Files
 

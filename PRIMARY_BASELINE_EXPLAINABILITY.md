@@ -164,4 +164,12 @@ Good next comparison:
 - baseline B: pruned low-redundancy model
 - baseline C: expanded but still safe pre-alert model
 
-That would give a clearer paper story than jumping straight to a more complex architecture.
+We now ran baseline B as well.
+
+Result:
+
+- the 18-feature pruned model stayed very close to the 41-feature baseline
+- it improved Logistic Regression only slightly
+- it did not materially improve XGBoost
+
+So the 41-feature model remains the main baseline, and the pruned model works better as a sensitivity analysis than as a replacement.

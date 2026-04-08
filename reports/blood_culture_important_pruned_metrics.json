@@ -1,0 +1,105 @@
+{
+  "feature_set_name": "IMPORTANT_PRUNED_FEATURES",
+  "feature_count": 18,
+  "feature_list": [
+    "lab_platelets_last_24h",
+    "lab_creatinine_last_24h",
+    "anchor_age",
+    "lab_platelets_count_24h",
+    "in_icu_at_alert",
+    "vital_temperature_c_max_24h",
+    "vital_temperature_c_min_24h",
+    "lab_creatinine_count_24h",
+    "vital_map_min_24h",
+    "vital_heart_rate_last_24h",
+    "mechanical_ventilation_chart_events_24h",
+    "vital_resp_rate_max_24h",
+    "lab_wbc_last_24h",
+    "vital_spo2_last_24h",
+    "vital_resp_rate_last_24h",
+    "lab_lactate_max_24h",
+    "lab_lactate_last_24h",
+    "vital_temperature_c_last_24h"
+  ],
+  "cohort": {
+    "rows": 2506,
+    "train_rows": 1764,
+    "val_rows": 374,
+    "test_rows": 368,
+    "train_positive": 875,
+    "val_positive": 193,
+    "test_positive": 178
+  },
+  "models": {
+    "logistic_regression": {
+      "validation": {
+        "threshold": 0.21999999999999997,
+        "f1": 0.7931769722814499,
+        "precision": 0.6739130434782609,
+        "recall": 0.9637305699481865,
+        "accuracy": 0.7406417112299465,
+        "auroc": 0.7505939942175021,
+        "auprc": 0.6972826297791721,
+        "brier": 0.19708289833042253,
+        "tp": 186,
+        "tn": 91,
+        "fp": 90,
+        "fn": 7,
+        "positives": 193,
+        "negatives": 181,
+        "best_f1_scan": 0.7931769722814499
+      },
+      "test": {
+        "threshold": 0.21999999999999997,
+        "f1": 0.7709750566893424,
+        "precision": 0.6463878326996197,
+        "recall": 0.9550561797752809,
+        "accuracy": 0.7255434782608695,
+        "auroc": 0.7907155529272619,
+        "auprc": 0.7228970366589875,
+        "brier": 0.188447924628367,
+        "tp": 170,
+        "tn": 97,
+        "fp": 93,
+        "fn": 8,
+        "positives": 178,
+        "negatives": 190
+      }
+    },
+    "xgboost": {
+      "validation": {
+        "threshold": 0.21999999999999997,
+        "f1": 0.7956989247311828,
+        "precision": 0.6801470588235294,
+        "recall": 0.9585492227979274,
+        "accuracy": 0.7459893048128342,
+        "auroc": 0.7759711447628318,
+        "auprc": 0.7117244830206624,
+        "brier": 0.18750715787011393,
+        "tp": 185,
+        "tn": 94,
+        "fp": 87,
+        "fn": 8,
+        "positives": 193,
+        "negatives": 181,
+        "best_f1_scan": 0.7956989247311828
+      },
+      "test": {
+        "threshold": 0.21999999999999997,
+        "f1": 0.7557603686635944,
+        "precision": 0.640625,
+        "recall": 0.9213483146067416,
+        "accuracy": 0.7119565217391305,
+        "auroc": 0.8078503843879361,
+        "auprc": 0.7573096617926773,
+        "brier": 0.17788947021228282,
+        "tp": 164,
+        "tn": 98,
+        "fp": 92,
+        "fn": 14,
+        "positives": 178,
+        "negatives": 190
+      }
+    }
+  }
+}

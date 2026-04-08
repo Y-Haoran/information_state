@@ -84,4 +84,33 @@ The tradeoff is clear:
 
 ## Secondary Results
 
-The repo also contains larger exploratory models with more features. Those are useful as secondary analyses, but they are not the main baseline story anymore.
+### Secondary sensitivity analysis: 18-feature pruned model
+
+We also trained a smaller model using only the most important features after SHAP ranking and correlation pruning.
+
+Saved metrics:
+
+- [reports/blood_culture_important_pruned_metrics.json](reports/blood_culture_important_pruned_metrics.json)
+- [scripts/train_pruned_feature_baseline.py](scripts/train_pruned_feature_baseline.py)
+
+Held-out test results for the 18-feature pruned model:
+
+| Model | F1 | Precision | Recall | Accuracy | AUROC | AUPRC | Brier |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| Logistic Regression | `0.771` | `0.646` | `0.955` | `0.726` | `0.791` | `0.723` | `0.188` |
+| XGBoost | `0.756` | `0.641` | `0.921` | `0.712` | `0.808` | `0.757` | `0.178` |
+
+Interpretation:
+
+- pruning did **not** clearly outperform the 41-feature baseline
+- logistic regression changed only slightly
+- XGBoost stayed very similar
+- this smaller model is still useful as a robustness and interpretability check
+
+### Practical summary
+
+The current hierarchy is:
+
+- main baseline: 41-feature first-alert model
+- secondary sensitivity model: 18-feature important-pruned model
+- larger exploratory models: secondary only
