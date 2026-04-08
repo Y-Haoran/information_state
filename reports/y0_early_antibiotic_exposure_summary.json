@@ -1,0 +1,29 @@
+{
+  "y0_rows": 1260,
+  "y0_unique_patients": 1220,
+  "y0_any_early_abx_rows": 60,
+  "y0_any_early_abx_pct": 0.047619047619047616,
+  "y0_anti_mrsa_rows": 20,
+  "y0_anti_mrsa_pct": 0.015873015873015872,
+  "y0_no_24_72h_continuation_rows": 1260,
+  "anti_mrsa_medication_breakdown": [
+    {
+      "medication": "Vancomycin",
+      "admin_rows": 23,
+      "unique_admissions": 15,
+      "unique_patients": 15
+    },
+    {
+      "medication": "Daptomycin",
+      "admin_rows": 3,
+      "unique_admissions": 3,
+      "unique_patients": 3
+    },
+    {
+      "medication": "Linezolid",
+      "admin_rows": 3,
+      "unique_admissions": 2,
+      "unique_patients": 2
+    }
+  ]
+}

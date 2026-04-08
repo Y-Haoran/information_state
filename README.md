@@ -68,6 +68,7 @@ Main files:
 
 - clinician summary: [CLINICIAN_OVERVIEW.md](CLINICIAN_OVERVIEW.md)
 - short project report: [reports/blood_culture_first_alert_project_report.md](reports/blood_culture_first_alert_project_report.md)
+- stewardship slice: [reports/y0_early_antibiotic_exposure.md](reports/y0_early_antibiotic_exposure.md)
 - baseline results: [BASELINE_BLOOD_CULTURE_RESULTS.md](BASELINE_BLOOD_CULTURE_RESULTS.md)
 - feature reference: [BLOOD_CULTURE_FEATURE_REFERENCE.md](BLOOD_CULTURE_FEATURE_REFERENCE.md)
 - explainability summary: [PRIMARY_BASELINE_EXPLAINABILITY.md](PRIMARY_BASELINE_EXPLAINABILITY.md)
