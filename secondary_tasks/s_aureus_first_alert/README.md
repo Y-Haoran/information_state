@@ -13,7 +13,49 @@ This secondary task asks a different question:
 
 > At the first Gram-positive alert, which patients are more likely to have later-confirmed `Staphylococcus aureus` and should be prioritized for urgent review, repeat cultures, and source evaluation?
 
-## Current Cohort
+## Refined Same-Episode Cohort
+
+The cleaner version of this task is:
+
+> At the first Gram-positive blood-culture alert, can the prior 24 hours of routine data predict whether that same index blood-culture episode will later finalize as `Staphylococcus aureus` rather than another Gram-positive organism?
+
+Primary clean cohort:
+
+- first Gram-positive alert per admission
+- same-episode species label
+- exclude polymicrobial first-alert episodes
+- focus first on urgent / emergency admissions
+
+Saved files:
+
+- [reports/s_aureus_same_episode_first_alert_metrics.json](../../reports/s_aureus_same_episode_first_alert_metrics.json)
+- [reports/s_aureus_same_episode_first_alert_report.md](../../reports/s_aureus_same_episode_first_alert_report.md)
+- [scripts/train_s_aureus_same_episode_first_alert.py](../../scripts/train_s_aureus_same_episode_first_alert.py)
+
+Primary cohort counts:
+
+- rows: `3,877`
+- unique patients: `3,588`
+- `S. aureus` positives: `1,021`
+- prevalence: `26.3%`
+
+Primary held-out test results:
+
+- Logistic Regression: AUROC `0.666`, F1 `0.459`
+- XGBoost: AUROC `0.640`, F1 `0.465`
+
+Sensitivity cohort:
+
+- all single-organism first Gram-positive alerts
+- rows: `5,275`
+- `S. aureus` positives: `1,397`
+
+Sensitivity held-out test results:
+
+- Logistic Regression: AUROC `0.594`, F1 `0.465`
+- XGBoost: AUROC `0.631`, F1 `0.490`
+
+## Older Looser Cohort
 
 Using the current first-alert dataset:
 
@@ -49,12 +91,12 @@ Saved metrics:
 - pruned-feature sensitivity analysis: [reports/s_aureus_first_alert_pruned_report.md](../../reports/s_aureus_first_alert_pruned_report.md)
 - pruned trainer script: [scripts/train_s_aureus_pruned_baseline.py](../../scripts/train_s_aureus_pruned_baseline.py)
 
-Held-out test performance with the current `41`-feature baseline:
+Held-out test performance with the older looser `41`-feature baseline:
 
 - Logistic Regression: AUROC `0.611`, F1 `0.424`
 - XGBoost: AUROC `0.608`, F1 `0.430`
 
-We also ran feature selection for this secondary task.
+We also ran feature selection for this older looser version of the task.
 
 Pruned `15`-feature results:
 
@@ -69,20 +111,13 @@ Interpretation:
 
 ## Interpretation
 
-This is a clinically meaningful question, but the current feature set is **not strong enough** to make it the main project.
+The refined same-episode cohort is the better scientific version of this task because:
 
-The signal is modest:
+- the alert and the final `S. aureus` label belong to the same microbiology episode
+- polymicrobial first-alert episodes are removed from the primary analysis
+- urgent / emergency admissions are a cleaner first clinical subgroup
 
-- better than random
-- but much weaker than the main contaminant-vs-significant task
-
-That means the current physiology-only baseline should be treated as:
-
-- a feasibility analysis
-- a secondary experiment
-- a starting point for richer feature engineering
-
-It should **not** yet be used to justify strong claims about species-level early treatment decisions.
+Even after that cleanup, performance is still only modest, so this should remain a secondary analysis until we add source- and device-aware features.
 
 ## Why We Still Want To Work On It
 
@@ -112,10 +147,10 @@ These additions fit the biology of the question much better than vitals and rout
 
 ## Bottom Line
 
-This `S. aureus` task is worth keeping in the repo because it is clinically meaningful.
+This `S. aureus` task is worth keeping because it is clinically meaningful, but the refined same-episode dataset should be the version readers look at first.
 
-But the current evidence says:
+Current takeaway:
 
-- keep the existing first-alert project as the **primary story**
-- keep this `S. aureus` task as a **secondary analysis**
-- improve it with richer source- and device-aware features before treating it as a serious decision-support model
+- keep the contaminant-vs-significant model as the primary project
+- use the refined same-episode `S. aureus` cohort as the better secondary analysis
+- improve it next with device, source, and prior-staphylococcal context

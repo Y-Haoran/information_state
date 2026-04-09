@@ -1,0 +1,202 @@
+{
+  "task_name": "predict_s_aureus_from_same_first_gp_alert_episode",
+  "clinical_question": "At the first Gram-positive blood-culture alert, can the prior 24 hours of routine clinical data predict whether that same finalized blood-culture episode is Staphylococcus aureus?",
+  "label_definition": {
+    "positive": "first Gram-positive alert episode later finalizes as S. aureus",
+    "negative": "first Gram-positive alert episode later finalizes as another Gram-positive organism",
+    "exclusions_primary": [
+      "polymicrobial first-alert episodes",
+      "non-urgent / non-emergency admissions for the primary cohort"
+    ]
+  },
+  "cohorts": {
+    "primary_urgent_single_organism": {
+      "cohort_name": "primary_urgent_single_organism",
+      "cohort_description": "single-organism first Gram-positive alerts, urgent or emergency admissions only",
+      "feature_set_name": "PRIMARY_FEATURES_41",
+      "feature_count": 41,
+      "cohort": {
+        "rows": 3877,
+        "unique_patients": 3588,
+        "unique_admissions": 3877,
+        "positive_rows": 1021,
+        "positive_prevalence": 0.26334794944544754,
+        "icu_rate": 0.2130513283466598,
+        "train_rows": 2720,
+        "val_rows": 579,
+        "test_rows": 578,
+        "train_positive": 714,
+        "val_positive": 155,
+        "test_positive": 152
+      },
+      "models": {
+        "logistic_regression": {
+          "validation": {
+            "threshold": 0.4699999999999999,
+            "f1": 0.45,
+            "precision": 0.3323076923076923,
+            "recall": 0.6967741935483871,
+            "accuracy": 0.5440414507772021,
+            "auroc": 0.6034388314059647,
+            "auprc": 0.3750563554019718,
+            "brier": 0.24467166890367698,
+            "tp": 108,
+            "tn": 207,
+            "fp": 217,
+            "fn": 47,
+            "positives": 155,
+            "negatives": 424,
+            "best_f1_scan": 0.45
+          },
+          "test": {
+            "threshold": 0.4699999999999999,
+            "f1": 0.4592274678111588,
+            "precision": 0.34076433121019106,
+            "recall": 0.7039473684210527,
+            "accuracy": 0.5640138408304498,
+            "auroc": 0.6663577958981962,
+            "auprc": 0.38175432960432754,
+            "brier": 0.23559978449583635,
+            "tp": 107,
+            "tn": 219,
+            "fp": 207,
+            "fn": 45,
+            "positives": 152,
+            "negatives": 426
+          }
+        },
+        "xgboost": {
+          "validation": {
+            "threshold": 0.38999999999999996,
+            "f1": 0.44398340248962653,
+            "precision": 0.327217125382263,
+            "recall": 0.6903225806451613,
+            "accuracy": 0.5371329879101899,
+            "auroc": 0.6186396835057821,
+            "auprc": 0.3913715542113354,
+            "brier": 0.22796128658160986,
+            "tp": 107,
+            "tn": 204,
+            "fp": 220,
+            "fn": 48,
+            "positives": 155,
+            "negatives": 424,
+            "best_f1_scan": 0.44398340248962653
+          },
+          "test": {
+            "threshold": 0.38999999999999996,
+            "f1": 0.4649122807017544,
+            "precision": 0.34868421052631576,
+            "recall": 0.6973684210526315,
+            "accuracy": 0.5778546712802768,
+            "auroc": 0.6402427724240177,
+            "auprc": 0.371164870506277,
+            "brier": 0.22112258515184557,
+            "tp": 106,
+            "tn": 228,
+            "fp": 198,
+            "fn": 46,
+            "positives": 152,
+            "negatives": 426
+          }
+        }
+      }
+    },
+    "sensitivity_all_single_organism": {
+      "cohort_name": "sensitivity_all_single_organism",
+      "cohort_description": "all single-organism first Gram-positive alerts",
+      "feature_set_name": "PRIMARY_FEATURES_41",
+      "feature_count": 41,
+      "cohort": {
+        "rows": 5275,
+        "unique_patients": 4802,
+        "unique_admissions": 5275,
+        "positive_rows": 1397,
+        "positive_prevalence": 0.2648341232227488,
+        "icu_rate": 0.19924170616113743,
+        "train_rows": 3696,
+        "val_rows": 796,
+        "test_rows": 783,
+        "train_positive": 971,
+        "val_positive": 198,
+        "test_positive": 228
+      },
+      "models": {
+        "logistic_regression": {
+          "validation": {
+            "threshold": 0.4599999999999999,
+            "f1": 0.440625,
+            "precision": 0.3190045248868778,
+            "recall": 0.7121212121212122,
+            "accuracy": 0.550251256281407,
+            "auroc": 0.6415492719840545,
+            "auprc": 0.3652479278824342,
+            "brier": 0.23657329153149137,
+            "tp": 141,
+            "tn": 297,
+            "fp": 301,
+            "fn": 57,
+            "positives": 198,
+            "negatives": 598,
+            "best_f1_scan": 0.440625
+          },
+          "test": {
+            "threshold": 0.4599999999999999,
+            "f1": 0.46504559270516715,
+            "precision": 0.3558139534883721,
+            "recall": 0.6710526315789473,
+            "accuracy": 0.5504469987228607,
+            "auroc": 0.5944365418049629,
+            "auprc": 0.3634735634008902,
+            "brier": 0.24578619301036597,
+            "tp": 153,
+            "tn": 278,
+            "fp": 277,
+            "fn": 75,
+            "positives": 228,
+            "negatives": 555
+          }
+        },
+        "xgboost": {
+          "validation": {
+            "threshold": 0.35999999999999993,
+            "f1": 0.4408284023668639,
+            "precision": 0.3117154811715481,
+            "recall": 0.7525252525252525,
+            "accuracy": 0.5251256281407035,
+            "auroc": 0.6376980507415289,
+            "auprc": 0.3630099158399065,
+            "brier": 0.2257857423330398,
+            "tp": 149,
+            "tn": 269,
+            "fp": 329,
+            "fn": 49,
+            "positives": 198,
+            "negatives": 598,
+            "best_f1_scan": 0.4408284023668639
+          },
+          "test": {
+            "threshold": 0.35999999999999993,
+            "f1": 0.49002849002849,
+            "precision": 0.3628691983122363,
+            "recall": 0.7543859649122807,
+            "accuracy": 0.5427841634738186,
+            "auroc": 0.6305041883989253,
+            "auprc": 0.37676867016550347,
+            "brier": 0.23210217297089333,
+            "tp": 172,
+            "tn": 253,
+            "fp": 302,
+            "fn": 56,
+            "positives": 228,
+            "negatives": 555
+          }
+        }
+      }
+    }
+  },
+  "files": {
+    "primary_features_csv": "/nfs/users/nfs_d/ds39/dosage_prediction/artifacts/blood_culture/s_aureus_same_episode_primary_urgent_features.csv",
+    "sensitivity_features_csv": "/nfs/users/nfs_d/ds39/dosage_prediction/artifacts/blood_culture/s_aureus_same_episode_single_org_features.csv"
+  }
+}
