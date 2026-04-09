@@ -73,6 +73,7 @@ Main files:
 - feature reference: [BLOOD_CULTURE_FEATURE_REFERENCE.md](BLOOD_CULTURE_FEATURE_REFERENCE.md)
 - explainability summary: [PRIMARY_BASELINE_EXPLAINABILITY.md](PRIMARY_BASELINE_EXPLAINABILITY.md)
 - secondary `S. aureus` task: [secondary_tasks/s_aureus_first_alert/README.md](secondary_tasks/s_aureus_first_alert/README.md)
+- secondary first-blood-culture `S. aureus` task: [secondary_tasks/s_aureus_first_blood_culture/README.md](secondary_tasks/s_aureus_first_blood_culture/README.md)
 - figures folder: [figures/primary_baseline](figures/primary_baseline)
 - clean baseline metrics JSON: [reports/blood_culture_primary_feature_metrics.json](reports/blood_culture_primary_feature_metrics.json)
 - pruned 18-feature metrics JSON: [reports/blood_culture_important_pruned_metrics.json](reports/blood_culture_important_pruned_metrics.json)
@@ -145,3 +146,4 @@ The repo should now be read as:
 Current secondary analysis:
 
 - early prioritization of later-confirmed `S. aureus` at the first Gram-positive alert
+- earlier `S. aureus` prioritization from the first blood-culture event using `0-24h` and `0-18h` windows
