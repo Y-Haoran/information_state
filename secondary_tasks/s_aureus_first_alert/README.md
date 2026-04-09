@@ -46,11 +46,26 @@ Saved metrics:
 - [reports/s_aureus_first_alert_metrics.json](../../reports/s_aureus_first_alert_metrics.json)
 - [reports/s_aureus_first_alert_report.md](../../reports/s_aureus_first_alert_report.md)
 - trainer script: [scripts/train_s_aureus_first_alert_baseline.py](../../scripts/train_s_aureus_first_alert_baseline.py)
+- pruned-feature sensitivity analysis: [reports/s_aureus_first_alert_pruned_report.md](../../reports/s_aureus_first_alert_pruned_report.md)
+- pruned trainer script: [scripts/train_s_aureus_pruned_baseline.py](../../scripts/train_s_aureus_pruned_baseline.py)
 
 Held-out test performance with the current `41`-feature baseline:
 
 - Logistic Regression: AUROC `0.611`, F1 `0.424`
 - XGBoost: AUROC `0.608`, F1 `0.430`
+
+We also ran feature selection for this secondary task.
+
+Pruned `15`-feature results:
+
+- Logistic Regression: AUROC `0.638`, F1 `0.433`
+- XGBoost: AUROC `0.604`, F1 `0.427`
+
+Interpretation:
+
+- pruning helps Logistic Regression a bit
+- pruning does not improve XGBoost
+- so the current task still looks feature-limited rather than algorithm-limited
 
 ## Interpretation
 

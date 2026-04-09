@@ -46,6 +46,23 @@ It does **not** support this stronger statement:
 
 > routine pre-alert vitals and labs are already sufficient to drive early species-targeted treatment decisions
 
+## Feature Selection Check
+
+We also tested an importance-pruned version of this task using a reduced `15`-feature set.
+
+Results:
+
+- Logistic Regression improved slightly:
+  - AUROC `0.611 -> 0.638`
+  - AUPRC `0.373 -> 0.397`
+  - F1 `0.424 -> 0.433`
+- XGBoost did not improve:
+  - AUROC `0.608 -> 0.604`
+  - AUPRC `0.349 -> 0.342`
+  - F1 `0.430 -> 0.427`
+
+So feature selection reduces some noise for the simpler linear model, but it does not solve the main limitation of this task.
+
 ## Most Important Next Features
 
 To make this task stronger, the next feature set should prioritize:
