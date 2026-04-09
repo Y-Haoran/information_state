@@ -72,6 +72,7 @@ Main files:
 - baseline results: [BASELINE_BLOOD_CULTURE_RESULTS.md](BASELINE_BLOOD_CULTURE_RESULTS.md)
 - feature reference: [BLOOD_CULTURE_FEATURE_REFERENCE.md](BLOOD_CULTURE_FEATURE_REFERENCE.md)
 - explainability summary: [PRIMARY_BASELINE_EXPLAINABILITY.md](PRIMARY_BASELINE_EXPLAINABILITY.md)
+- secondary `S. aureus` task: [secondary_tasks/s_aureus_first_alert/README.md](secondary_tasks/s_aureus_first_alert/README.md)
 - figures folder: [figures/primary_baseline](figures/primary_baseline)
 - clean baseline metrics JSON: [reports/blood_culture_primary_feature_metrics.json](reports/blood_culture_primary_feature_metrics.json)
 - pruned 18-feature metrics JSON: [reports/blood_culture_important_pruned_metrics.json](reports/blood_culture_important_pruned_metrics.json)
@@ -139,4 +140,8 @@ The repo should now be read as:
 
 - a **first-alert blood-culture classification project**
 - with a **clean 41-feature baseline**
-- and a larger exploratory pipeline behind it
+- and a few secondary analyses behind it
+
+Current secondary analysis:
+
+- early prioritization of later-confirmed `S. aureus` at the first Gram-positive alert

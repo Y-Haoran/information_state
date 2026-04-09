@@ -1,0 +1,91 @@
+{
+  "task_name": "predict_later_confirmed_s_aureus_from_first_gp_alert",
+  "clinical_question": "At the first Gram-positive blood-culture alert, which patients are more likely to have later-confirmed Staphylococcus aureus and should be prioritized for urgent review, repeat cultures, and source evaluation?",
+  "feature_set_name": "PRIMARY_FEATURES_41",
+  "feature_count": 41,
+  "cohort": {
+    "rows": 5546,
+    "unique_patients": 5021,
+    "unique_admissions": 5546,
+    "positive_rows": 1454,
+    "positive_prevalence": 0.26217093400649116,
+    "train_rows": 3888,
+    "val_rows": 828,
+    "test_rows": 830,
+    "train_positive": 1026,
+    "val_positive": 213,
+    "test_positive": 215
+  },
+  "models": {
+    "logistic_regression": {
+      "validation": {
+        "threshold": 0.49999999999999994,
+        "f1": 0.45357142857142857,
+        "precision": 0.3659942363112392,
+        "recall": 0.596244131455399,
+        "accuracy": 0.6304347826086957,
+        "auroc": 0.6383678766365128,
+        "auprc": 0.34990023283366445,
+        "brier": 0.2407976316774383,
+        "tp": 127,
+        "tn": 395,
+        "fp": 220,
+        "fn": 86,
+        "positives": 213,
+        "negatives": 615,
+        "best_f1_scan": 0.45357142857142857
+      },
+      "test": {
+        "threshold": 0.49999999999999994,
+        "f1": 0.42424242424242425,
+        "precision": 0.3439306358381503,
+        "recall": 0.5534883720930233,
+        "accuracy": 0.6108433734939759,
+        "auroc": 0.6115031196823596,
+        "auprc": 0.3728454521835588,
+        "brier": 0.23902636072009323,
+        "tp": 119,
+        "tn": 388,
+        "fp": 227,
+        "fn": 96,
+        "positives": 215,
+        "negatives": 615
+      }
+    },
+    "xgboost": {
+      "validation": {
+        "threshold": 0.4099999999999999,
+        "f1": 0.4552590266875981,
+        "precision": 0.3419811320754717,
+        "recall": 0.6807511737089202,
+        "accuracy": 0.5809178743961353,
+        "auroc": 0.6362914615061643,
+        "auprc": 0.3883465147138315,
+        "brier": 0.22127729658869774,
+        "tp": 145,
+        "tn": 336,
+        "fp": 279,
+        "fn": 68,
+        "positives": 213,
+        "negatives": 615,
+        "best_f1_scan": 0.4552590266875981
+      },
+      "test": {
+        "threshold": 0.4099999999999999,
+        "f1": 0.4296520423600605,
+        "precision": 0.3183856502242152,
+        "recall": 0.6604651162790698,
+        "accuracy": 0.5457831325301205,
+        "auroc": 0.6075174891283797,
+        "auprc": 0.3485675389469258,
+        "brier": 0.23086470039143134,
+        "tp": 142,
+        "tn": 311,
+        "fp": 304,
+        "fn": 73,
+        "positives": 215,
+        "negatives": 615
+      }
+    }
+  }
+}
