@@ -31,6 +31,9 @@ Saved files:
 - [reports/s_aureus_same_episode_first_alert_metrics.json](../../reports/s_aureus_same_episode_first_alert_metrics.json)
 - [reports/s_aureus_same_episode_first_alert_report.md](../../reports/s_aureus_same_episode_first_alert_report.md)
 - [scripts/train_s_aureus_same_episode_first_alert.py](../../scripts/train_s_aureus_same_episode_first_alert.py)
+- enriched follow-up: [reports/s_aureus_same_episode_enriched_report.md](../../reports/s_aureus_same_episode_enriched_report.md)
+- enriched metrics: [reports/s_aureus_same_episode_enriched_metrics.json](../../reports/s_aureus_same_episode_enriched_metrics.json)
+- enriched trainer: [scripts/train_s_aureus_same_episode_enriched.py](../../scripts/train_s_aureus_same_episode_enriched.py)
 
 Primary cohort counts:
 
@@ -44,6 +47,19 @@ Primary held-out test results:
 - Logistic Regression: AUROC `0.666`, F1 `0.459`
 - XGBoost: AUROC `0.640`, F1 `0.465`
 
+### Enriched Follow-up
+
+We then added:
+
+- draw-to-alert time
+- pre-alert blood-culture draw counts
+- prior patient history of positive `S. aureus`, CoNS, and any-staphylococcal blood cultures
+
+Primary cohort enriched results:
+
+- Logistic Regression: AUROC `0.807`, AUPRC `0.657`, F1 `0.589`
+- XGBoost: AUROC `0.817`, AUPRC `0.704`, F1 `0.606`
+
 Sensitivity cohort:
 
 - all single-organism first Gram-positive alerts
@@ -54,6 +70,11 @@ Sensitivity held-out test results:
 
 - Logistic Regression: AUROC `0.594`, F1 `0.465`
 - XGBoost: AUROC `0.631`, F1 `0.490`
+
+Sensitivity enriched results:
+
+- Logistic Regression: AUROC `0.761`, AUPRC `0.644`, F1 `0.565`
+- XGBoost: AUROC `0.811`, AUPRC `0.717`, F1 `0.632`
 
 ## Older Looser Cohort
 
@@ -117,7 +138,9 @@ The refined same-episode cohort is the better scientific version of this task be
 - polymicrobial first-alert episodes are removed from the primary analysis
 - urgent / emergency admissions are a cleaner first clinical subgroup
 
-Even after that cleanup, performance is still only modest, so this should remain a secondary analysis until we add source- and device-aware features.
+The added process and prior-staph-history features materially improved performance, which supports the idea that this task is more microbiology- and history-driven than physiology-driven.
+
+It should still remain a secondary analysis until we add source- and device-aware features, but it is now much more convincing than the earlier physiology-only version.
 
 ## Why We Still Want To Work On It
 
