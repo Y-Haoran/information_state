@@ -1,0 +1,105 @@
+{
+  "task_name": "s_aureus_same_episode_pruned",
+  "feature_set_name": "PRUNED_ENRICHED_FEATURES",
+  "feature_count": 19,
+  "feature_list": [
+    "prior_subject_s_aureus_positive_90d",
+    "index_hours_draw_to_alert",
+    "prealert_blood_culture_draws_7d",
+    "lab_platelets_last_24h",
+    "anchor_age",
+    "prior_subject_s_aureus_positive_365d",
+    "lab_creatinine_last_24h",
+    "prealert_blood_culture_draws_24h",
+    "in_icu_at_alert",
+    "lab_lactate_max_24h",
+    "prior_subject_cons_positive_365d",
+    "prealert_blood_culture_draws_6h",
+    "prior_positive_specimens_7d",
+    "prior_subject_cons_positive_90d",
+    "prior_subject_any_staph_positive_365d",
+    "lab_creatinine_count_24h",
+    "lab_wbc_last_24h",
+    "vital_map_count_24h",
+    "vital_temperature_c_max_24h"
+  ],
+  "cohort": {
+    "rows": 3877,
+    "unique_patients": 3588,
+    "unique_admissions": 3877,
+    "positive_rows": 1021,
+    "positive_prevalence": 0.26334794944544754
+  },
+  "models": {
+    "logistic_regression": {
+      "validation": {
+        "threshold": 0.5199999999999999,
+        "f1": 0.5820433436532507,
+        "precision": 0.5595238095238095,
+        "recall": 0.6064516129032258,
+        "accuracy": 0.7668393782383419,
+        "auroc": 0.770952525867316,
+        "auprc": 0.6571748084194022,
+        "brier": 0.18280895788520926,
+        "tp": 94,
+        "tn": 350,
+        "fp": 74,
+        "fn": 61,
+        "positives": 155,
+        "negatives": 424,
+        "best_f1_scan": 0.5820433436532507
+      },
+      "test": {
+        "threshold": 0.5199999999999999,
+        "f1": 0.6153846153846154,
+        "precision": 0.6,
+        "recall": 0.631578947368421,
+        "accuracy": 0.7923875432525952,
+        "auroc": 0.8116351618482827,
+        "auprc": 0.6718457455896683,
+        "brier": 0.1707410515360883,
+        "tp": 96,
+        "tn": 362,
+        "fp": 64,
+        "fn": 56,
+        "positives": 152,
+        "negatives": 426
+      }
+    },
+    "xgboost": {
+      "validation": {
+        "threshold": 0.4099999999999999,
+        "f1": 0.5888594164456233,
+        "precision": 0.5,
+        "recall": 0.7161290322580646,
+        "accuracy": 0.7322970639032815,
+        "auroc": 0.8069080949482653,
+        "auprc": 0.6799927385033303,
+        "brier": 0.16211520088582257,
+        "tp": 111,
+        "tn": 313,
+        "fp": 111,
+        "fn": 44,
+        "positives": 155,
+        "negatives": 424,
+        "best_f1_scan": 0.5888594164456233
+      },
+      "test": {
+        "threshold": 0.4099999999999999,
+        "f1": 0.6036745406824147,
+        "precision": 0.5021834061135371,
+        "recall": 0.756578947368421,
+        "accuracy": 0.7387543252595156,
+        "auroc": 0.8196812453669385,
+        "auprc": 0.7070807773026201,
+        "brier": 0.15477112270450274,
+        "tp": 115,
+        "tn": 312,
+        "fp": 114,
+        "fn": 37,
+        "positives": 152,
+        "negatives": 426
+      }
+    }
+  }
+}

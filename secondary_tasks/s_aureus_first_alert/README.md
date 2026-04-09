@@ -34,6 +34,9 @@ Saved files:
 - enriched follow-up: [reports/s_aureus_same_episode_enriched_report.md](../../reports/s_aureus_same_episode_enriched_report.md)
 - enriched metrics: [reports/s_aureus_same_episode_enriched_metrics.json](../../reports/s_aureus_same_episode_enriched_metrics.json)
 - enriched trainer: [scripts/train_s_aureus_same_episode_enriched.py](../../scripts/train_s_aureus_same_episode_enriched.py)
+- feature reduction and clinical explanation: [reports/s_aureus_same_episode_feature_reduction_report.md](../../reports/s_aureus_same_episode_feature_reduction_report.md)
+- explainability script: [scripts/analyze_s_aureus_same_episode_enriched.py](../../scripts/analyze_s_aureus_same_episode_enriched.py)
+- pruned trainer: [scripts/train_s_aureus_same_episode_pruned.py](../../scripts/train_s_aureus_same_episode_pruned.py)
 
 Primary cohort counts:
 
@@ -60,6 +63,15 @@ Primary cohort enriched results:
 - Logistic Regression: AUROC `0.807`, AUPRC `0.657`, F1 `0.589`
 - XGBoost: AUROC `0.817`, AUPRC `0.704`, F1 `0.606`
 
+### Feature Reduction
+
+We then used SHAP-style importance and correlation filtering to reduce the enriched model from `54` features to `19`.
+
+Pruned primary cohort results:
+
+- Logistic Regression: AUROC `0.812`, AUPRC `0.672`, F1 `0.615`
+- XGBoost: AUROC `0.820`, AUPRC `0.707`, F1 `0.604`
+
 Sensitivity cohort:
 
 - all single-organism first Gram-positive alerts
@@ -85,6 +97,8 @@ The refined same-episode cohort is the better scientific version of this task be
 - urgent / emergency admissions are a cleaner first clinical subgroup
 
 The added process and prior-staph-history features materially improved performance, which supports the idea that this task is more microbiology- and history-driven than physiology-driven.
+
+The pruned `19`-feature model kept almost all of the enriched model’s performance, so the current signal is concentrated in a relatively small set of clinically interpretable features.
 
 It should still remain a secondary analysis until we add source- and device-aware features, but it is now much more convincing than the earlier physiology-only version.
 

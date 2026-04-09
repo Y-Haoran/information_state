@@ -1,0 +1,352 @@
+{
+  "feature_set_name": "ENRICHED_SAME_EPISODE_FEATURES",
+  "feature_count": 54,
+  "cohort": {
+    "rows": 3877,
+    "unique_patients": 3588,
+    "unique_admissions": 3877
+  },
+  "models": {
+    "logistic_regression": {
+      "validation": {
+        "threshold": 0.5399999999999999,
+        "f1": 0.5791044776119403,
+        "precision": 0.5388888888888889,
+        "recall": 0.6258064516129033,
+        "accuracy": 0.7564766839378239,
+        "auroc": 0.7664637857577601,
+        "auprc": 0.6554267794617866,
+        "brier": 0.1834604526720105,
+        "tp": 97,
+        "tn": 341,
+        "fp": 83,
+        "fn": 58,
+        "positives": 155,
+        "negatives": 424,
+        "best_f1_scan": 0.5791044776119403
+      },
+      "test": {
+        "threshold": 0.5399999999999999,
+        "f1": 0.588957055214724,
+        "precision": 0.5517241379310345,
+        "recall": 0.631578947368421,
+        "accuracy": 0.7681660899653979,
+        "auroc": 0.8071102050901903,
+        "auprc": 0.6572849832104191,
+        "brier": 0.17110298523151388,
+        "tp": 96,
+        "tn": 348,
+        "fp": 78,
+        "fn": 56,
+        "positives": 152,
+        "negatives": 426
+      }
+    },
+    "xgboost": {
+      "validation": {
+        "threshold": 0.4799999999999999,
+        "f1": 0.5899705014749262,
+        "precision": 0.5434782608695652,
+        "recall": 0.6451612903225806,
+        "accuracy": 0.7599309153713298,
+        "auroc": 0.8023737066342057,
+        "auprc": 0.674875116436959,
+        "brier": 0.1619306422408543,
+        "tp": 100,
+        "tn": 340,
+        "fp": 84,
+        "fn": 55,
+        "positives": 155,
+        "negatives": 424,
+        "best_f1_scan": 0.5899705014749262
+      },
+      "test": {
+        "threshold": 0.4799999999999999,
+        "f1": 0.6064139941690962,
+        "precision": 0.5445026178010471,
+        "recall": 0.6842105263157895,
+        "accuracy": 0.7664359861591695,
+        "auroc": 0.8166079812206573,
+        "auprc": 0.7042444639529359,
+        "brier": 0.15472377642321308,
+        "tp": 104,
+        "tn": 339,
+        "fp": 87,
+        "fn": 48,
+        "positives": 152,
+        "negatives": 426
+      }
+    }
+  },
+  "top_xgb_shap_features": [
+    {
+      "feature": "prior_subject_s_aureus_positive_90d",
+      "mean_abs_shap": 0.6206084489822388
+    },
+    {
+      "feature": "index_hours_draw_to_alert",
+      "mean_abs_shap": 0.5083926916122437
+    },
+    {
+      "feature": "prealert_blood_culture_draws_7d",
+      "mean_abs_shap": 0.35672280192375183
+    },
+    {
+      "feature": "lab_platelets_last_24h",
+      "mean_abs_shap": 0.19998982548713684
+    },
+    {
+      "feature": "lab_platelets_min_24h",
+      "mean_abs_shap": 0.16897912323474884
+    },
+    {
+      "feature": "anchor_age",
+      "mean_abs_shap": 0.13724274933338165
+    },
+    {
+      "feature": "prior_subject_s_aureus_positive_365d",
+      "mean_abs_shap": 0.13440516591072083
+    },
+    {
+      "feature": "lab_creatinine_last_24h",
+      "mean_abs_shap": 0.12109775096178055
+    },
+    {
+      "feature": "prealert_blood_culture_draws_24h",
+      "mean_abs_shap": 0.12023381888866425
+    },
+    {
+      "feature": "lab_creatinine_max_24h",
+      "mean_abs_shap": 0.10444926470518112
+    },
+    {
+      "feature": "in_icu_at_alert",
+      "mean_abs_shap": 0.05721348896622658
+    },
+    {
+      "feature": "lab_lactate_max_24h",
+      "mean_abs_shap": 0.04085053130984306
+    },
+    {
+      "feature": "prior_subject_cons_positive_365d",
+      "mean_abs_shap": 0.039780400693416595
+    },
+    {
+      "feature": "prealert_blood_culture_draws_6h",
+      "mean_abs_shap": 0.03962240740656853
+    },
+    {
+      "feature": "prior_positive_specimens_7d",
+      "mean_abs_shap": 0.038703516125679016
+    }
+  ],
+  "top_logistic_features": [
+    {
+      "feature": "prior_subject_any_staph_positive_365d",
+      "coefficient": -0.7628443354448948,
+      "abs_coefficient": 0.7628443354448948
+    },
+    {
+      "feature": "prior_subject_s_aureus_positive_365d_flag",
+      "coefficient": 0.6477176262009147,
+      "abs_coefficient": 0.6477176262009147
+    },
+    {
+      "feature": "prealert_blood_culture_draws_24h",
+      "coefficient": 0.5879083784249108,
+      "abs_coefficient": 0.5879083784249108
+    },
+    {
+      "feature": "prior_subject_s_aureus_positive_90d",
+      "coefficient": 0.5683053210763431,
+      "abs_coefficient": 0.5683053210763431
+    },
+    {
+      "feature": "prior_subject_s_aureus_positive_365d",
+      "coefficient": 0.5336984891019512,
+      "abs_coefficient": 0.5336984891019512
+    },
+    {
+      "feature": "lab_creatinine_max_24h",
+      "coefficient": 0.5130383904362109,
+      "abs_coefficient": 0.5130383904362109
+    },
+    {
+      "feature": "vital_spo2_count_24h",
+      "coefficient": -0.5105037763978144,
+      "abs_coefficient": 0.5105037763978144
+    },
+    {
+      "feature": "mechanical_ventilation_chart_events_24h",
+      "coefficient": -0.4998023296522955,
+      "abs_coefficient": 0.4998023296522955
+    },
+    {
+      "feature": "prealert_additional_draws_24h",
+      "coefficient": -0.46826803207878526,
+      "abs_coefficient": 0.46826803207878526
+    },
+    {
+      "feature": "lab_creatinine_last_24h",
+      "coefficient": -0.4060340942884979,
+      "abs_coefficient": 0.4060340942884979
+    },
+    {
+      "feature": "prior_positive_specimens_7d",
+      "coefficient": -0.34619391901496344,
+      "abs_coefficient": 0.34619391901496344
+    },
+    {
+      "feature": "prior_subject_cons_positive_365d",
+      "coefficient": 0.34090240311415315,
+      "abs_coefficient": 0.34090240311415315
+    },
+    {
+      "feature": "mechanical_ventilation_24h",
+      "coefficient": 0.32398082686710705,
+      "abs_coefficient": 0.32398082686710705
+    },
+    {
+      "feature": "lab_wbc_min_24h",
+      "coefficient": 0.31945284085547476,
+      "abs_coefficient": 0.31945284085547476
+    },
+    {
+      "feature": "index_hours_draw_to_alert",
+      "coefficient": -0.31674180291545984,
+      "abs_coefficient": 0.31674180291545984
+    }
+  ],
+  "top_correlation_pairs": [
+    {
+      "feature_left": "lab_platelets_last_24h",
+      "feature_right": "lab_platelets_min_24h",
+      "correlation": 0.9978656329630734,
+      "abs_correlation": 0.9978656329630734
+    },
+    {
+      "feature_left": "lab_creatinine_last_24h",
+      "feature_right": "lab_creatinine_max_24h",
+      "correlation": 0.9958461434114396,
+      "abs_correlation": 0.9958461434114396
+    },
+    {
+      "feature_left": "vital_heart_rate_count_24h",
+      "feature_right": "vital_spo2_count_24h",
+      "correlation": 0.99294217760574,
+      "abs_correlation": 0.99294217760574
+    },
+    {
+      "feature_left": "lab_wbc_last_24h",
+      "feature_right": "lab_wbc_min_24h",
+      "correlation": 0.9923116909209468,
+      "abs_correlation": 0.9923116909209468
+    },
+    {
+      "feature_left": "vital_heart_rate_count_24h",
+      "feature_right": "vital_resp_rate_count_24h",
+      "correlation": 0.990544880874683,
+      "abs_correlation": 0.990544880874683
+    },
+    {
+      "feature_left": "vital_resp_rate_count_24h",
+      "feature_right": "vital_spo2_count_24h",
+      "correlation": 0.9859207411653536,
+      "abs_correlation": 0.9859207411653536
+    },
+    {
+      "feature_left": "vital_heart_rate_count_24h",
+      "feature_right": "vital_map_count_24h",
+      "correlation": 0.9516822036462073,
+      "abs_correlation": 0.9516822036462073
+    },
+    {
+      "feature_left": "vital_map_count_24h",
+      "feature_right": "vital_spo2_count_24h",
+      "correlation": 0.9499879347323658,
+      "abs_correlation": 0.9499879347323658
+    },
+    {
+      "feature_left": "vital_resp_rate_count_24h",
+      "feature_right": "vital_map_count_24h",
+      "correlation": 0.9484893309934427,
+      "abs_correlation": 0.9484893309934427
+    },
+    {
+      "feature_left": "lab_wbc_last_24h",
+      "feature_right": "lab_wbc_max_24h",
+      "correlation": 0.9374465207249165,
+      "abs_correlation": 0.9374465207249165
+    },
+    {
+      "feature_left": "lab_wbc_min_24h",
+      "feature_right": "lab_wbc_max_24h",
+      "correlation": 0.9361205493844036,
+      "abs_correlation": 0.9361205493844036
+    },
+    {
+      "feature_left": "mechanical_ventilation_chart_events_24h",
+      "feature_right": "mechanical_ventilation_24h",
+      "correlation": 0.9245514722291516,
+      "abs_correlation": 0.9245514722291516
+    },
+    {
+      "feature_left": "prealert_blood_culture_draws_24h",
+      "feature_right": "prealert_additional_draws_24h",
+      "correlation": 0.9153019726534344,
+      "abs_correlation": 0.9153019726534344
+    },
+    {
+      "feature_left": "lab_lactate_last_24h",
+      "feature_right": "lab_lactate_max_24h",
+      "correlation": 0.8913385660788944,
+      "abs_correlation": 0.8913385660788944
+    },
+    {
+      "feature_left": "vital_heart_rate_last_24h",
+      "feature_right": "vital_heart_rate_min_24h",
+      "correlation": 0.8697971668702916,
+      "abs_correlation": 0.8697971668702916
+    },
+    {
+      "feature_left": "vital_heart_rate_count_24h",
+      "feature_right": "vital_temperature_c_count_24h",
+      "correlation": 0.8591983814472309,
+      "abs_correlation": 0.8591983814472309
+    },
+    {
+      "feature_left": "vital_temperature_c_count_24h",
+      "feature_right": "vital_spo2_count_24h",
+      "correlation": 0.855935883473021,
+      "abs_correlation": 0.855935883473021
+    },
+    {
+      "feature_left": "vital_resp_rate_count_24h",
+      "feature_right": "vital_temperature_c_count_24h",
+      "correlation": 0.852598936861089,
+      "abs_correlation": 0.852598936861089
+    },
+    {
+      "feature_left": "prior_subject_s_aureus_positive_365d",
+      "feature_right": "prior_subject_any_staph_positive_365d",
+      "correlation": 0.8372643927916905,
+      "abs_correlation": 0.8372643927916905
+    },
+    {
+      "feature_left": "prior_subject_s_aureus_positive_90d",
+      "feature_right": "prior_subject_s_aureus_positive_365d",
+      "correlation": 0.8231117165237726,
+      "abs_correlation": 0.8231117165237726
+    }
+  ],
+  "files": {
+    "logistic_coefficients_csv": "/nfs/users/nfs_d/ds39/dosage_prediction/reports/s_aureus_same_episode_enriched_logistic_coefficients.csv",
+    "xgb_shap_importance_csv": "/nfs/users/nfs_d/ds39/dosage_prediction/reports/s_aureus_same_episode_enriched_xgb_shap_importance.csv",
+    "feature_observation_rates_csv": "/nfs/users/nfs_d/ds39/dosage_prediction/reports/s_aureus_same_episode_enriched_feature_observation_rates.csv",
+    "correlation_matrix_csv": "/nfs/users/nfs_d/ds39/dosage_prediction/reports/s_aureus_same_episode_enriched_feature_correlation_matrix.csv",
+    "correlation_pairs_csv": "/nfs/users/nfs_d/ds39/dosage_prediction/reports/s_aureus_same_episode_enriched_feature_correlation_pairs.csv",
+    "xgb_shap_importance_png": "/nfs/users/nfs_d/ds39/dosage_prediction/reports/s_aureus_same_episode_enriched_xgb_shap_importance.png",
+    "logistic_coefficients_png": "/nfs/users/nfs_d/ds39/dosage_prediction/reports/s_aureus_same_episode_enriched_logistic_coefficients.png",
+    "correlation_png": "/nfs/users/nfs_d/ds39/dosage_prediction/reports/s_aureus_same_episode_enriched_feature_correlation.png"
+  }
+}
