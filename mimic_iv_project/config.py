@@ -23,6 +23,12 @@ class ProjectConfig:
     history_hours: int = 24
     future_hours: int = 6
     bin_hours: int = 1
+    window_hours: int = 24
+    window_stride_hours: int = 2
+    positive_window_gap_hours: int = 2
+    delta_cap_hours: int = 48
+    winsor_lower_quantile: float = 0.01
+    winsor_upper_quantile: float = 0.99
     min_age: int = 18
     long_los_days: float = 7.0
     train_fraction: float = 0.7
@@ -39,6 +45,19 @@ class ProjectConfig:
             self.raw_root = Path(env_root).resolve() if env_root else self.project_root / "data"
         else:
             self.raw_root = Path(self.raw_root).resolve()
+
+        hour_fields = {
+            "history_hours": self.history_hours,
+            "future_hours": self.future_hours,
+            "window_hours": self.window_hours,
+            "window_stride_hours": self.window_stride_hours,
+            "positive_window_gap_hours": self.positive_window_gap_hours,
+        }
+        for field_name, field_value in hour_fields.items():
+            if field_value % self.bin_hours != 0:
+                raise ValueError(f"{field_name} must be divisible by bin_hours={self.bin_hours}.")
+        if not 0.0 <= self.winsor_lower_quantile < self.winsor_upper_quantile <= 1.0:
+            raise ValueError("Winsor quantiles must satisfy 0 <= lower < upper <= 1.")
 
     @property
     def hosp_dir(self) -> Path:
@@ -79,6 +98,62 @@ class ProjectConfig:
     @property
     def history_bins(self) -> int:
         return self.history_hours // self.bin_hours
+
+    @property
+    def window_bins(self) -> int:
+        return self.window_hours // self.bin_hours
+
+    @property
+    def window_stride_bins(self) -> int:
+        return self.window_stride_hours // self.bin_hours
+
+    @property
+    def positive_window_gap_bins(self) -> int:
+        return self.positive_window_gap_hours // self.bin_hours
+
+    @property
+    def state_from_observation_dir(self) -> Path:
+        return self.artifacts_dir / "state_from_observation"
+
+    @property
+    def observation_cohort_path(self) -> Path:
+        return self.state_from_observation_dir / "cohort.csv"
+
+    @property
+    def observation_hourly_values_path(self) -> Path:
+        return self.state_from_observation_dir / "hourly_values.npy"
+
+    @property
+    def observation_hourly_masks_path(self) -> Path:
+        return self.state_from_observation_dir / "hourly_masks.npy"
+
+    @property
+    def observation_hourly_deltas_path(self) -> Path:
+        return self.state_from_observation_dir / "hourly_deltas.npy"
+
+    @property
+    def observation_window_metadata_path(self) -> Path:
+        return self.state_from_observation_dir / "window_metadata.csv"
+
+    @property
+    def observation_metadata_path(self) -> Path:
+        return self.state_from_observation_dir / "hourly_metadata.json"
+
+    @property
+    def observation_stats_path(self) -> Path:
+        return self.state_from_observation_dir / "feature_stats.json"
+
+    @property
+    def observation_temp_last_time_path(self) -> Path:
+        return self.state_from_observation_dir / "_tmp_last_seen_seconds.npy"
+
+    @property
+    def observation_checkpoint_path(self) -> Path:
+        return self.state_from_observation_dir / "state_from_observation_ssl.pt"
+
+    @property
+    def observation_history_path(self) -> Path:
+        return self.state_from_observation_dir / "ssl_history.json"
 
 
 STATIC_NUMERIC_COLUMNS = [
