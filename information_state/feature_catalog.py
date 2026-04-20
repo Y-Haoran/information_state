@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-import re
 from dataclasses import asdict
 
 import pandas as pd
@@ -19,9 +18,11 @@ def build_catalog(config: ProjectConfig) -> dict:
 
     catalog = {
         "config": {
-            "history_hours": config.history_hours,
-            "future_hours": config.future_hours,
+            "window_hours": config.window_hours,
+            "window_stride_hours": config.window_stride_hours,
+            "positive_window_gap_hours": config.positive_window_gap_hours,
             "bin_hours": config.bin_hours,
+            "delta_cap_hours": config.delta_cap_hours,
         },
         "features": [],
     }
@@ -51,4 +52,3 @@ def load_catalog(config: ProjectConfig) -> dict:
 
 def feature_names_by_source(catalog: dict, source: str) -> list[str]:
     return [feature["name"] for feature in catalog["features"] if feature["source"] == source]
-

@@ -20,8 +20,6 @@ class FeatureSpec:
 class ProjectConfig:
     project_root: Path = field(default_factory=lambda: Path(__file__).resolve().parents[1])
     raw_root: Path | None = None
-    history_hours: int = 24
-    future_hours: int = 6
     bin_hours: int = 1
     window_hours: int = 24
     window_stride_hours: int = 2
@@ -30,7 +28,6 @@ class ProjectConfig:
     winsor_lower_quantile: float = 0.01
     winsor_upper_quantile: float = 0.99
     min_age: int = 18
-    long_los_days: float = 7.0
     train_fraction: float = 0.7
     val_fraction: float = 0.15
     random_seed: int = 7
@@ -47,8 +44,6 @@ class ProjectConfig:
             self.raw_root = Path(self.raw_root).resolve()
 
         hour_fields = {
-            "history_hours": self.history_hours,
-            "future_hours": self.future_hours,
             "window_hours": self.window_hours,
             "window_stride_hours": self.window_stride_hours,
             "positive_window_gap_hours": self.positive_window_gap_hours,
@@ -72,32 +67,8 @@ class ProjectConfig:
         return self.project_root / "artifacts"
 
     @property
-    def cohort_path(self) -> Path:
-        return self.artifacts_dir / "cohort.csv"
-
-    @property
     def catalog_path(self) -> Path:
         return self.artifacts_dir / "resolved_catalog.json"
-
-    @property
-    def sequence_dataset_path(self) -> Path:
-        return self.artifacts_dir / "sequence_dataset.npz"
-
-    @property
-    def sequence_metadata_path(self) -> Path:
-        return self.artifacts_dir / "sequence_metadata.json"
-
-    @property
-    def tabular_features_path(self) -> Path:
-        return self.artifacts_dir / "tabular_features.csv"
-
-    @property
-    def tabular_metadata_path(self) -> Path:
-        return self.artifacts_dir / "tabular_metadata.json"
-
-    @property
-    def history_bins(self) -> int:
-        return self.history_hours // self.bin_hours
 
     @property
     def window_bins(self) -> int:
@@ -154,26 +125,6 @@ class ProjectConfig:
     @property
     def observation_history_path(self) -> Path:
         return self.state_from_observation_dir / "ssl_history.json"
-
-
-STATIC_NUMERIC_COLUMNS = [
-    "anchor_age",
-    "diag_count",
-]
-
-STATIC_CATEGORICAL_COLUMNS = [
-    "gender",
-    "admission_type",
-    "insurance",
-    "race",
-    "first_careunit",
-]
-
-TASK_COLUMNS = [
-    "in_hospital_mortality",
-    "long_icu_los",
-    "vasopressor_next_6h",
-]
 
 FEATURE_SPECS = [
     FeatureSpec(
