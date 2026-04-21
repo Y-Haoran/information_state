@@ -29,6 +29,8 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--max-stays", type=int, default=None)
     parser.add_argument("--chunk-size", type=int, default=200_000)
     parser.add_argument("--max-chunks", type=int, default=None)
+    parser.add_argument("--max-train-pairs", type=int, default=None)
+    parser.add_argument("--max-val-pairs", type=int, default=None)
     parser.add_argument("--epochs", type=int, default=50)
     parser.add_argument("--batch-size", type=int, default=32)
     parser.add_argument("--learning-rate", type=float, default=1e-4)
@@ -110,8 +112,18 @@ def main(argv: Sequence[str] | None = None) -> None:
 
     metadata = load_json(config.observation_metadata_path)
 
-    train_dataset = ObservationWindowPairDataset(config, split="train")
-    val_dataset = ObservationWindowPairDataset(config, split="val")
+    train_dataset = ObservationWindowPairDataset(
+        config,
+        split="train",
+        max_pairs=args.max_train_pairs,
+        sample_seed=args.seed,
+    )
+    val_dataset = ObservationWindowPairDataset(
+        config,
+        split="val",
+        max_pairs=args.max_val_pairs,
+        sample_seed=args.seed,
+    )
 
     train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, drop_last=True)
     val_loader = DataLoader(val_dataset, batch_size=args.batch_size, shuffle=False, drop_last=False)

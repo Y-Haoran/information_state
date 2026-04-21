@@ -665,7 +665,13 @@ def build_state_from_observation_dataset(config: ProjectConfig) -> tuple[pd.Data
 class ObservationWindowPairDataset(Dataset):
     """Return adjacent window pairs for self-supervised contrastive training."""
 
-    def __init__(self, config: ProjectConfig, split: str) -> None:
+    def __init__(
+        self,
+        config: ProjectConfig,
+        split: str,
+        max_pairs: int | None = None,
+        sample_seed: int = 7,
+    ) -> None:
         self.config = config
         self.window_bins = config.window_bins
         self.values = np.load(config.observation_hourly_values_path, mmap_mode="r")
@@ -674,6 +680,10 @@ class ObservationWindowPairDataset(Dataset):
 
         windows = load_window_metadata(config)
         windows = windows[(windows["split"] == split) & (windows["positive_flat_start"] >= 0)].copy()
+        if max_pairs is not None and len(windows) > max_pairs:
+            rng = np.random.default_rng(sample_seed)
+            selected = rng.choice(len(windows), size=max_pairs, replace=False)
+            windows = windows.iloc[np.sort(selected)].copy()
         self.flat_starts = windows["flat_start"].to_numpy(dtype=np.int64)
         self.positive_flat_starts = windows["positive_flat_start"].to_numpy(dtype=np.int64)
 
