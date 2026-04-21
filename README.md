@@ -38,6 +38,9 @@ This repo is intentionally narrow. It contains only:
 - window sampling for adjacent positive pairs
 - the `State-from-Observation` encoder and Clinical State Formation operator
 - self-supervised contrastive training
+- single-window embedding extraction
+- clustering into candidate latent states
+- phenotype evaluation and observation-robustness checks
 
 It does not contain the earlier blood-culture classifiers or unrelated baseline tasks.
 
@@ -49,6 +52,10 @@ It does not contain the earlier blood-culture classifiers or unrelated baseline 
 - `information_state/state_from_observation.py`: observation encoder and state formation operator
 - `information_state/contrastive.py`: symmetric InfoNCE loss
 - `information_state/train_ssl.py`: SSL training entrypoint
+- `information_state/extract_embeddings.py`: export encoder states per window
+- `information_state/cluster_states.py`: cluster window-level states
+- `information_state/evaluate_phenotypes.py`: summarize outcomes, physiology, and transitions by cluster
+- `information_state/evaluate_observation_robustness.py`: measure embedding drift under observation thinning
 
 ## Install
 
@@ -69,4 +76,13 @@ python3 -m information_state.train_ssl \
   --batch-size 32
 ```
 
-Artifacts are written under `artifacts/state_from_observation/`.
+Then:
+
+```bash
+python3 -m information_state.extract_embeddings --split train val
+python3 -m information_state.cluster_states --split train --k 4
+python3 -m information_state.evaluate_phenotypes
+python3 -m information_state.evaluate_observation_robustness --split val
+```
+
+Artifacts are written under `artifacts/state_from_observation/` with subdirectories for embeddings, clusters, evaluation, and robustness.

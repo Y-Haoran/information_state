@@ -126,6 +126,22 @@ class ProjectConfig:
     def observation_history_path(self) -> Path:
         return self.state_from_observation_dir / "ssl_history.json"
 
+    @property
+    def embeddings_dir(self) -> Path:
+        return self.state_from_observation_dir / "embeddings"
+
+    @property
+    def clusters_dir(self) -> Path:
+        return self.state_from_observation_dir / "clusters"
+
+    @property
+    def evaluation_dir(self) -> Path:
+        return self.state_from_observation_dir / "evaluation"
+
+    @property
+    def robustness_dir(self) -> Path:
+        return self.state_from_observation_dir / "robustness"
+
 FEATURE_SPECS = [
     FeatureSpec(
         name="heart_rate",

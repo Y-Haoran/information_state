@@ -52,6 +52,7 @@ def build_observation_cohort(config: ProjectConfig) -> pd.DataFrame:
             "admission_type",
             "insurance",
             "race",
+            "hospital_expire_flag",
         ],
     )
     icustays = _read_csv(
@@ -69,8 +70,11 @@ def build_observation_cohort(config: ProjectConfig) -> pd.DataFrame:
 
     cohort = cohort.dropna(subset=["intime", "outtime"]).copy()
     stay_hours = (cohort["outtime"] - cohort["intime"]).dt.total_seconds() / 3600.0
+    cohort["stay_hours"] = stay_hours.astype(float)
     cohort["num_bins"] = np.floor(stay_hours / config.bin_hours).astype(int)
     cohort = cohort[cohort["num_bins"] >= config.window_bins].copy()
+    cohort["in_hospital_mortality"] = cohort["hospital_expire_flag"].fillna(0).astype(int)
+    cohort["icu_los_days"] = pd.to_numeric(cohort["los"], errors="coerce").fillna(0.0).astype(float)
 
     if config.max_stays is not None:
         cohort = cohort.sort_values(["intime", "stay_id"]).head(config.max_stays).copy()
@@ -114,12 +118,24 @@ def build_observation_cohort(config: ProjectConfig) -> pd.DataFrame:
 
 
 def load_observation_cohort(config: ProjectConfig) -> pd.DataFrame:
+    expected_columns = {"in_hospital_mortality", "icu_los_days", "stay_hours"}
     if config.observation_cohort_path.exists():
-        return pd.read_csv(
+        cohort = pd.read_csv(
             config.observation_cohort_path,
             parse_dates=["intime", "outtime", "admittime", "dischtime"],
         )
+        if expected_columns.issubset(cohort.columns):
+            return cohort
     return build_observation_cohort(config)
+
+
+def load_window_metadata(config: ProjectConfig) -> pd.DataFrame:
+    expected_columns = {"window_index", "end_bin", "start_hour", "end_hour"}
+    if config.observation_window_metadata_path.exists():
+        windows = pd.read_csv(config.observation_window_metadata_path)
+        if expected_columns.issubset(windows.columns):
+            return windows
+    return build_window_metadata(config)
 
 
 def _initialize_memmaps(config: ProjectConfig, total_bins: int, num_features: int) -> tuple[np.memmap, np.memmap, np.memmap]:
@@ -546,7 +562,18 @@ def build_window_metadata(config: ProjectConfig) -> pd.DataFrame:
     window_id = 0
 
     for row in tqdm(
-        cohort[["subject_id", "hadm_id", "stay_id", "split", "offset", "num_bins"]].itertuples(index=False),
+        cohort[
+            [
+                "subject_id",
+                "hadm_id",
+                "stay_id",
+                "split",
+                "offset",
+                "num_bins",
+                "in_hospital_mortality",
+                "icu_los_days",
+            ]
+        ].itertuples(index=False),
         total=len(cohort),
         desc="Windows",
     ):
@@ -561,14 +588,21 @@ def build_window_metadata(config: ProjectConfig) -> pd.DataFrame:
         stay_frame = pd.DataFrame(
             {
                 "window_id": np.arange(window_id, window_id + len(starts), dtype=np.int64),
+                "window_index": np.arange(len(starts), dtype=np.int32),
                 "subject_id": int(row.subject_id),
                 "hadm_id": int(row.hadm_id),
                 "stay_id": int(row.stay_id),
                 "split": row.split,
                 "flat_start": int(row.offset) + starts,
                 "start_bin": starts,
+                "end_bin": starts + config.window_bins,
+                "start_hour": starts * config.bin_hours,
+                "end_hour": (starts + config.window_bins) * config.bin_hours,
                 "positive_flat_start": positive_flat_start.astype(np.int64),
                 "positive_start_bin": np.where(has_positive, positive_starts, -1).astype(np.int32),
+                "positive_end_bin": np.where(has_positive, positive_starts + config.window_bins, -1).astype(np.int32),
+                "in_hospital_mortality": int(row.in_hospital_mortality),
+                "icu_los_days": float(row.icu_los_days),
             }
         )
         records.append(stay_frame)
@@ -580,14 +614,21 @@ def build_window_metadata(config: ProjectConfig) -> pd.DataFrame:
         windows = pd.DataFrame(
             columns=[
                 "window_id",
+                "window_index",
                 "subject_id",
                 "hadm_id",
                 "stay_id",
                 "split",
                 "flat_start",
                 "start_bin",
+                "end_bin",
+                "start_hour",
+                "end_hour",
                 "positive_flat_start",
                 "positive_start_bin",
+                "positive_end_bin",
+                "in_hospital_mortality",
+                "icu_los_days",
             ]
         )
 
@@ -616,7 +657,7 @@ class ObservationWindowPairDataset(Dataset):
         self.masks = np.load(config.observation_hourly_masks_path, mmap_mode="r")
         self.deltas = np.load(config.observation_hourly_deltas_path, mmap_mode="r")
 
-        windows = pd.read_csv(config.observation_window_metadata_path)
+        windows = load_window_metadata(config)
         windows = windows[(windows["split"] == split) & (windows["positive_flat_start"] >= 0)].copy()
         self.flat_starts = windows["flat_start"].to_numpy(dtype=np.int64)
         self.positive_flat_starts = windows["positive_flat_start"].to_numpy(dtype=np.int64)
@@ -636,3 +677,33 @@ class ObservationWindowPairDataset(Dataset):
         anchor = self._load_window(int(self.flat_starts[index]))
         positive = self._load_window(int(self.positive_flat_starts[index]))
         return anchor, positive
+
+
+class ObservationWindowDataset(Dataset):
+    def __init__(self, config: ProjectConfig, split: str | None = None, max_windows: int | None = None) -> None:
+        self.config = config
+        self.window_bins = config.window_bins
+        self.values = np.load(config.observation_hourly_values_path, mmap_mode="r")
+        self.masks = np.load(config.observation_hourly_masks_path, mmap_mode="r")
+        self.deltas = np.load(config.observation_hourly_deltas_path, mmap_mode="r")
+
+        windows = load_window_metadata(config)
+        if split is not None:
+            windows = windows[windows["split"] == split].copy()
+        if max_windows is not None:
+            windows = windows.head(max_windows).copy()
+        self.window_metadata = windows.reset_index(drop=True)
+
+    def __len__(self) -> int:
+        return len(self.window_metadata)
+
+    def _load_window(self, flat_start: int) -> torch.Tensor:
+        flat_stop = flat_start + self.window_bins
+        values = np.asarray(self.values[flat_start:flat_stop], dtype=np.float32)
+        masks = np.asarray(self.masks[flat_start:flat_stop], dtype=np.float32)
+        deltas = np.log1p(np.asarray(self.deltas[flat_start:flat_stop], dtype=np.float32))
+        return torch.from_numpy(np.stack([values, masks, deltas], axis=-1)).float()
+
+    def __getitem__(self, index: int) -> tuple[torch.Tensor, dict[str, object]]:
+        row = self.window_metadata.iloc[index]
+        return self._load_window(int(row["flat_start"])), row.to_dict()
