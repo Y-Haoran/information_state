@@ -162,6 +162,39 @@ Stage-specific outputs:
 
 The repository currently includes a **bounded real-data smoke run** on a small MIMIC-IV subset. This is useful as a proof that the pipeline executes end to end on real source tables. It is **not** presented as final scientific evidence.
 
+### Was the Model Trained?
+
+Yes, but only in a bounded smoke-run setting intended to validate the full pipeline on real MIMIC-IV tables.
+
+Current bounded training setup:
+
+| Item | Value |
+| --- | --- |
+| data source | MIMIC-IV v3.1 |
+| time bin | `1h` |
+| window length | `24h` |
+| window stride | `2h` |
+| positive pair gap | `2h` |
+| dynamic variables | `22` |
+| delta cap | `48h` |
+| model width | `d_model = 32` |
+| attention heads | `4` |
+| layers | `3` |
+| projection dim | `32` |
+| epochs | `1` |
+| device | `cpu` |
+
+### Dataset Size for the Current Trained Run
+
+The current trained checkpoint was produced from a bounded subset with the following scale:
+
+| Split | Stays | Subjects | Windows | Positive windows |
+| --- | ---: | ---: | ---: | ---: |
+| train | 11 | 11 | 397 | 386 |
+| val | 2 | 2 | 29 | 27 |
+| test | 3 | 3 | 24 | 21 |
+| total | 16 | 16 | 450 | 434 |
+
 Current bounded-run snapshot:
 
 | Metric | Value |
@@ -182,6 +215,58 @@ Example cluster outcome summary from `cluster_outcomes.csv`:
 | 1 | 9 | 1 | 0.000 | 15.613 |
 | 2 | 7 | 1 | 0.000 | 15.613 |
 | 3 | 6 | 1 | 0.000 | 15.613 |
+
+### Multi-Metric Assessment of the Current Model
+
+The current checkpoint should be interpreted as an **operational real-data validation model**, not a final scientific model. Even so, the repo now reports performance across several metric families rather than a single number.
+
+#### 1. Contrastive Training Metrics
+
+| Metric | Train | Val |
+| --- | ---: | ---: |
+| InfoNCE loss | `1.391` | `1.354` |
+| Retrieval@1 | `0.242` | `0.259` |
+| Positive cosine similarity | `0.969` | `1.000` |
+
+#### 2. Embedding Structure Metrics
+
+| Metric | Value |
+| --- | ---: |
+| clustering method | `KMeans` |
+| selected `k` | `4` |
+| silhouette score | `0.946` |
+| Davies-Bouldin index | `0.956` |
+| cluster sizes | `375, 9, 7, 6` |
+
+#### 3. Observation Robustness Metrics
+
+Validation windows were perturbed by randomly thinning observed measurements with drop probability `0.3`.
+
+| Metric | Value |
+| --- | ---: |
+| windows evaluated | `29` |
+| mean embedding drift (L2) | `2.90e-07` |
+| median embedding drift (L2) | `2.90e-07` |
+| mean embedding cosine | `1.000` |
+| cluster stability rate | `1.000` |
+
+#### 4. Phenotype-Level Clinical Separation
+
+The current bounded run also produces phenotype summaries rather than only geometric embedding metrics:
+
+- cluster-level mortality rate
+- cluster-level ICU length of stay
+- cluster-level mean start and end hour
+- cluster-level physiology and observation-density profiles
+- within-stay transition matrices between latent states
+
+This is the current minimum multi-metric contract for the repo:
+
+- optimization metrics from SSL training
+- representation metrics from retrieval and cosine agreement
+- structure metrics from clustering quality
+- robustness metrics under observation thinning
+- clinical summary metrics from phenotype evaluation
 
 Generated artifact references for that bounded run:
 
