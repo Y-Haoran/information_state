@@ -62,6 +62,20 @@ class ProjectConfig:
     def icu_dir(self) -> Path:
         return self.raw_root / "icu"
 
+    def source_path(self, relative_path: str) -> Path:
+        path = self.raw_root / relative_path
+        if path.exists():
+            return path
+        if str(path).endswith(".gz"):
+            plain = Path(str(path)[:-3])
+            if plain.exists():
+                return plain
+        else:
+            gz = Path(f"{path}.gz")
+            if gz.exists():
+                return gz
+        raise FileNotFoundError(f"Could not resolve source file for {relative_path}.")
+
     @property
     def artifacts_dir(self) -> Path:
         return self.project_root / "artifacts"

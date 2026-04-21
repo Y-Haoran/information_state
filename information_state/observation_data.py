@@ -39,11 +39,11 @@ def build_observation_cohort(config: ProjectConfig) -> pd.DataFrame:
     config.state_from_observation_dir.mkdir(parents=True, exist_ok=True)
 
     patients = _read_csv(
-        config.hosp_dir / "patients.csv",
+        config.source_path("hosp/patients.csv"),
         usecols=["subject_id", "gender", "anchor_age"],
     )
     admissions = _read_csv(
-        config.hosp_dir / "admissions.csv",
+        config.source_path("hosp/admissions.csv"),
         usecols=[
             "subject_id",
             "hadm_id",
@@ -56,7 +56,7 @@ def build_observation_cohort(config: ProjectConfig) -> pd.DataFrame:
         ],
     )
     icustays = _read_csv(
-        config.icu_dir / "icustays.csv.gz",
+        config.source_path("icu/icustays.csv.gz"),
         usecols=["subject_id", "hadm_id", "stay_id", "first_careunit", "intime", "outtime", "los"],
     )
 
@@ -476,7 +476,7 @@ def build_hourly_observation_dataset(config: ProjectConfig) -> tuple[pd.DataFram
     values, masks, last_time = _initialize_memmaps(config, total_bins, num_features)
 
     _process_direct_source(
-        config.icu_dir / "inputevents.csv.gz",
+        config.source_path("icu/inputevents.csv.gz"),
         "input",
         cohort,
         features,
@@ -488,7 +488,7 @@ def build_hourly_observation_dataset(config: ProjectConfig) -> tuple[pd.DataFram
         config,
     )
     _process_direct_source(
-        config.icu_dir / "chartevents.csv.gz",
+        config.source_path("icu/chartevents.csv.gz"),
         "chart",
         cohort,
         features,
@@ -500,7 +500,7 @@ def build_hourly_observation_dataset(config: ProjectConfig) -> tuple[pd.DataFram
         config,
     )
     _process_direct_source(
-        config.icu_dir / "outputevents.csv.gz",
+        config.source_path("icu/outputevents.csv.gz"),
         "output",
         cohort,
         features,
@@ -512,7 +512,7 @@ def build_hourly_observation_dataset(config: ProjectConfig) -> tuple[pd.DataFram
         config,
     )
     _process_lab_source(
-        config.hosp_dir / "labevents.csv",
+        config.source_path("hosp/labevents.csv"),
         cohort,
         features,
         itemid_to_feature,

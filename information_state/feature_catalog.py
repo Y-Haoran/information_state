@@ -13,8 +13,8 @@ def _read_dictionary(path: str) -> pd.DataFrame:
 
 
 def build_catalog(config: ProjectConfig) -> dict:
-    d_items = _read_dictionary(config.icu_dir / "d_items.csv.gz")
-    d_labitems = _read_dictionary(config.hosp_dir / "d_labitems.csv")
+    d_items = _read_dictionary(config.source_path("icu/d_items.csv.gz"))
+    d_labitems = _read_dictionary(config.source_path("hosp/d_labitems.csv"))
 
     catalog = {
         "config": {
