@@ -1,8 +1,12 @@
+"""Evaluate embedding stability under observation-process perturbations."""
+
 from __future__ import annotations
 
 import argparse
 from pathlib import Path
+from typing import Sequence
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import torch
@@ -14,15 +18,16 @@ from .utils import (
     ensure_observation_data,
     load_model_from_checkpoint,
     make_project_config,
-    read_dataframe,
     resolve_checkpoint_path,
-    resolve_existing_table,
+    set_global_seed,
     write_dataframe,
     write_json,
+    write_run_manifest,
 )
 
 
-def parse_args() -> argparse.Namespace:
+def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
+    """Parse CLI arguments for robustness evaluation."""
     parser = argparse.ArgumentParser(description="Measure embedding stability under observation perturbations.")
     parser.add_argument("--project-root", type=str, default=None)
     parser.add_argument("--raw-root", type=str, default=None)
@@ -42,7 +47,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--drop-prob", type=float, default=0.3)
     parser.add_argument("--seed", type=int, default=7)
     parser.add_argument("--device", type=str, default="cuda" if torch.cuda.is_available() else "cpu")
-    return parser.parse_args()
+    return parser.parse_args(argv)
 
 
 def _metadata_batch_to_frame(batch_meta: dict[str, object]) -> pd.DataFrame:
@@ -96,8 +101,27 @@ def _assign_to_clusters(embeddings: np.ndarray, model_payload: dict[str, np.ndar
     return distances.argmin(axis=1)
 
 
-def main() -> None:
-    args = parse_args()
+def _write_robustness_plot(results: pd.DataFrame, output_path: Path) -> None:
+    """Save a simple drift histogram for README-level proof of robustness outputs."""
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    plt.figure(figsize=(6, 4))
+    if results.empty:
+        plt.text(0.5, 0.5, "No windows available", ha="center", va="center")
+        plt.xticks([])
+        plt.yticks([])
+    else:
+        plt.hist(results["embedding_drift_l2"], bins=min(20, max(len(results), 1)), color="#2a6f97", edgecolor="white")
+        plt.xlabel("Embedding drift (L2)")
+        plt.ylabel("Window count")
+        plt.title("Observation thinning robustness")
+    plt.tight_layout()
+    plt.savefig(output_path, dpi=180)
+    plt.close()
+
+
+def main(argv: Sequence[str] | None = None) -> None:
+    """Run robustness perturbations, summarize drift, and emit a plot."""
+    args = parse_args(argv)
     config = make_project_config(
         project_root=args.project_root,
         raw_root=args.raw_root,
@@ -108,7 +132,9 @@ def main() -> None:
         max_stays=args.max_stays,
         chunk_size=args.chunk_size,
         max_chunks=args.max_chunks,
+        random_seed=args.seed,
     )
+    set_global_seed(args.seed)
     ensure_observation_data(config, build_data=args.build_data)
 
     device = torch.device(args.device)
@@ -156,6 +182,8 @@ def main() -> None:
     results = pd.concat(result_frames, ignore_index=True) if result_frames else pd.DataFrame()
     config.robustness_dir.mkdir(parents=True, exist_ok=True)
     results_path = write_dataframe(results, config.robustness_dir / "robustness_metrics.parquet")
+    plot_path = config.robustness_dir / "embedding_drift_histogram.png"
+    _write_robustness_plot(results, plot_path)
 
     summary = {
         "split": args.split,
@@ -170,6 +198,19 @@ def main() -> None:
         summary["cluster_stability_rate"] = float(results["cluster_stable"].mean())
 
     write_json(summary, config.robustness_dir / "robustness_summary.json")
+    write_run_manifest(
+        config=config,
+        stage="evaluate_observation_robustness",
+        cli_args=vars(args),
+        output_dir=config.robustness_dir,
+        extra={
+            "checkpoint_path": str(checkpoint_path),
+            "cluster_model_path": str(cluster_model_path),
+            "results_path": str(results_path),
+            "summary_path": str(config.robustness_dir / "robustness_summary.json"),
+            "plot_path": str(plot_path),
+        },
+    )
 
 
 if __name__ == "__main__":

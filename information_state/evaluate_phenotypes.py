@@ -1,27 +1,32 @@
+"""Evaluate learned state clusters against outcomes, physiology, and transitions."""
+
 from __future__ import annotations
 
 import argparse
 from collections import defaultdict
 import json
 from pathlib import Path
+from typing import Sequence
 
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
 
-from .utils import make_project_config, read_dataframe, resolve_existing_table, write_dataframe
+from .utils import make_project_config, read_dataframe, resolve_existing_table, write_dataframe, write_run_manifest
 
 
-def parse_args() -> argparse.Namespace:
+def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
+    """Parse CLI arguments for phenotype evaluation."""
     parser = argparse.ArgumentParser(description="Evaluate learned phenotype clusters against physiology and outcomes.")
     parser.add_argument("--project-root", type=str, default=None)
     parser.add_argument("--assignments-path", type=str, default=None)
     parser.add_argument("--max-windows", type=int, default=None)
-    return parser.parse_args()
+    return parser.parse_args(argv)
 
 
-def main() -> None:
-    args = parse_args()
+def main(argv: Sequence[str] | None = None) -> None:
+    """Generate phenotype summaries from clustered window assignments."""
+    args = parse_args(argv)
     config = make_project_config(project_root=args.project_root)
     assignments_path = Path(args.assignments_path).resolve() if args.assignments_path else resolve_existing_table(
         config.clusters_dir / "cluster_assignments.parquet"
@@ -149,6 +154,21 @@ def main() -> None:
 
     with open(config.evaluation_dir / "evaluation_report.md", "w", encoding="utf-8") as handle:
         handle.write("\n".join(report_lines) + "\n")
+    write_run_manifest(
+        config=config,
+        stage="evaluate_phenotypes",
+        cli_args=vars(args),
+        output_dir=config.evaluation_dir,
+        extra={
+            "assignments_path": str(assignments_path),
+            "artifacts": {
+                "outcomes_path": str(outcomes_path),
+                "profiles_path": str(profiles_path),
+                "transitions_path": str(transitions_path),
+                "report_path": str(config.evaluation_dir / "evaluation_report.md"),
+            },
+        },
+    )
 
     print(f"outcomes={outcomes_path}")
     print(f"profiles={profiles_path}")

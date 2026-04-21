@@ -1,3 +1,5 @@
+"""Data building and dataset utilities for the State-from-Observation pipeline."""
+
 from __future__ import annotations
 
 import json
@@ -449,20 +451,31 @@ def _compute_deltas(masks: np.memmap, cohort: pd.DataFrame, config: ProjectConfi
         start = int(row.offset)
         stop = start + int(row.num_bins)
         stay_masks = np.asarray(masks[start:stop], dtype=bool)
-        stay_deltas = np.zeros((stop - start, masks.shape[1]), dtype=np.float32)
-        last_seen = np.full(masks.shape[1], -1, dtype=np.int32)
-        for time_index in range(stop - start):
-            observed = stay_masks[time_index]
-            missing_delta = np.where(
-                last_seen < 0,
-                config.delta_cap_hours,
-                np.minimum((time_index - last_seen) * config.bin_hours, config.delta_cap_hours),
-            ).astype(np.float32)
-            stay_deltas[time_index] = np.where(observed, 0.0, missing_delta)
-            last_seen = np.where(observed, time_index, last_seen)
+        stay_deltas = compute_stay_deltas(
+            stay_masks,
+            bin_hours=config.bin_hours,
+            delta_cap_hours=config.delta_cap_hours,
+        )
         deltas[start:stop] = stay_deltas
 
     return deltas
+
+
+def compute_stay_deltas(stay_masks: np.ndarray, *, bin_hours: int, delta_cap_hours: int) -> np.ndarray:
+    """Compute per-variable deltas for one stay or window-level binary mask matrix."""
+    stay_masks = np.asarray(stay_masks, dtype=bool)
+    stay_deltas = np.zeros(stay_masks.shape, dtype=np.float32)
+    last_seen = np.full(stay_masks.shape[1], -1, dtype=np.int32)
+    for time_index in range(stay_masks.shape[0]):
+        observed = stay_masks[time_index]
+        missing_delta = np.where(
+            last_seen < 0,
+            delta_cap_hours,
+            np.minimum((time_index - last_seen) * bin_hours, delta_cap_hours),
+        ).astype(np.float32)
+        stay_deltas[time_index] = np.where(observed, 0.0, missing_delta)
+        last_seen = np.where(observed, time_index, last_seen)
+    return stay_deltas
 
 
 def build_hourly_observation_dataset(config: ProjectConfig) -> tuple[pd.DataFrame, dict]:
@@ -650,6 +663,8 @@ def build_state_from_observation_dataset(config: ProjectConfig) -> tuple[pd.Data
 
 
 class ObservationWindowPairDataset(Dataset):
+    """Return adjacent window pairs for self-supervised contrastive training."""
+
     def __init__(self, config: ProjectConfig, split: str) -> None:
         self.config = config
         self.window_bins = config.window_bins
@@ -680,6 +695,8 @@ class ObservationWindowPairDataset(Dataset):
 
 
 class ObservationWindowDataset(Dataset):
+    """Return one observation window plus aligned metadata for downstream analysis."""
+
     def __init__(self, config: ProjectConfig, split: str | None = None, max_windows: int | None = None) -> None:
         self.config = config
         self.window_bins = config.window_bins

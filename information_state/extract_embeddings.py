@@ -1,7 +1,10 @@
+"""Export latent state embeddings for one window at a time."""
+
 from __future__ import annotations
 
 import argparse
 from pathlib import Path
+from typing import Sequence
 
 import numpy as np
 import pandas as pd
@@ -15,12 +18,15 @@ from .utils import (
     load_model_from_checkpoint,
     make_project_config,
     resolve_checkpoint_path,
+    set_global_seed,
     write_dataframe,
     write_json,
+    write_run_manifest,
 )
 
 
-def parse_args() -> argparse.Namespace:
+def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
+    """Parse CLI arguments for embedding extraction."""
     parser = argparse.ArgumentParser(description="Extract latent state embeddings for individual windows.")
     parser.add_argument("--project-root", type=str, default=None)
     parser.add_argument("--raw-root", type=str, default=None)
@@ -36,8 +42,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--chunk-size", type=int, default=200_000)
     parser.add_argument("--max-chunks", type=int, default=None)
     parser.add_argument("--batch-size", type=int, default=128)
+    parser.add_argument("--seed", type=int, default=7)
     parser.add_argument("--device", type=str, default="cuda" if torch.cuda.is_available() else "cpu")
-    return parser.parse_args()
+    return parser.parse_args(argv)
 
 
 def _metadata_batch_to_frame(batch_meta: dict[str, object]) -> pd.DataFrame:
@@ -50,8 +57,9 @@ def _metadata_batch_to_frame(batch_meta: dict[str, object]) -> pd.DataFrame:
     return pd.DataFrame(columns)
 
 
-def main() -> None:
-    args = parse_args()
+def main(argv: Sequence[str] | None = None) -> None:
+    """Extract encoder embeddings and aligned metadata tables."""
+    args = parse_args(argv)
     config = make_project_config(
         project_root=args.project_root,
         raw_root=args.raw_root,
@@ -62,7 +70,9 @@ def main() -> None:
         max_stays=args.max_stays,
         chunk_size=args.chunk_size,
         max_chunks=args.max_chunks,
+        random_seed=args.seed,
     )
+    set_global_seed(args.seed)
     ensure_observation_data(config, build_data=args.build_data)
 
     device = torch.device(args.device)
@@ -107,6 +117,17 @@ def main() -> None:
         }
 
     write_json(manifest, config.embeddings_dir / "embedding_manifest.json")
+    write_run_manifest(
+        config=config,
+        stage="extract_embeddings",
+        cli_args=vars(args),
+        output_dir=config.embeddings_dir,
+        extra={
+            "checkpoint_path": str(checkpoint_path),
+            "embedding_manifest_path": str(config.embeddings_dir / "embedding_manifest.json"),
+            "splits": manifest["splits"],
+        },
+    )
 
 
 if __name__ == "__main__":

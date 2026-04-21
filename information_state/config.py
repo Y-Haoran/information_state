@@ -1,3 +1,5 @@
+"""Project configuration and curated feature definitions for Information State."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -155,6 +157,10 @@ class ProjectConfig:
     @property
     def robustness_dir(self) -> Path:
         return self.state_from_observation_dir / "robustness"
+
+    @property
+    def manifests_dir(self) -> Path:
+        return self.state_from_observation_dir / "manifests"
 
 FEATURE_SPECS = [
     FeatureSpec(

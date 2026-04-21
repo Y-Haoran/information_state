@@ -1,3 +1,5 @@
+"""State-from-Observation model components."""
+
 from __future__ import annotations
 
 import math
@@ -7,6 +9,8 @@ from torch import nn
 
 
 class ObservationTripletEncoder(nn.Module):
+    """Encode each [value, mask, delta] observation triplet into a local state."""
+
     def __init__(self, num_variables: int, num_time_bins: int, d_model: int, dropout: float = 0.1) -> None:
         super().__init__()
         self.num_variables = num_variables
@@ -38,6 +42,8 @@ class ObservationTripletEncoder(nn.Module):
 
 
 class ClinicalStateFormationOperator(nn.Module):
+    """Jointly mix observation content, variable relations, time, and observation state."""
+
     def __init__(
         self,
         num_variables: int,
@@ -110,6 +116,8 @@ class ClinicalStateFormationOperator(nn.Module):
 
 
 class StateFormationBlock(nn.Module):
+    """Residual state-formation block with joint operator and feed-forward layer."""
+
     def __init__(
         self,
         num_variables: int,
@@ -143,6 +151,8 @@ class StateFormationBlock(nn.Module):
 
 
 class StateFromObservationEncoder(nn.Module):
+    """Map an observation tensor to a pooled latent clinical state."""
+
     def __init__(
         self,
         num_variables: int,
@@ -183,6 +193,8 @@ class StateFromObservationEncoder(nn.Module):
 
 
 class StateFromObservationModel(nn.Module):
+    """Encoder plus projection head for contrastive training and downstream encoding."""
+
     def __init__(
         self,
         num_variables: int,

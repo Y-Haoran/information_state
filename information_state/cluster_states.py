@@ -1,7 +1,10 @@
+"""Cluster latent state embeddings into candidate clinical phenotypes."""
+
 from __future__ import annotations
 
 import argparse
 from pathlib import Path
+from typing import Sequence
 
 import numpy as np
 from sklearn.cluster import KMeans
@@ -9,15 +12,18 @@ from sklearn.metrics import davies_bouldin_score, silhouette_score
 from sklearn.preprocessing import StandardScaler
 
 from .utils import (
+    make_project_config,
     read_dataframe,
     resolve_existing_table,
+    set_global_seed,
     write_dataframe,
     write_json,
-    make_project_config,
+    write_run_manifest,
 )
 
 
-def parse_args() -> argparse.Namespace:
+def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
+    """Parse CLI arguments for clustering."""
     parser = argparse.ArgumentParser(description="Cluster latent state embeddings into candidate phenotypes.")
     parser.add_argument("--project-root", type=str, default=None)
     parser.add_argument("--split", type=str, default="train")
@@ -25,12 +31,14 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--metadata-path", type=str, default=None)
     parser.add_argument("--k", nargs="+", type=int, default=[4])
     parser.add_argument("--seed", type=int, default=7)
-    return parser.parse_args()
+    return parser.parse_args(argv)
 
 
-def main() -> None:
-    args = parse_args()
-    config = make_project_config(project_root=args.project_root)
+def main(argv: Sequence[str] | None = None) -> None:
+    """Run clustering over extracted embeddings and save aligned assignments."""
+    args = parse_args(argv)
+    config = make_project_config(project_root=args.project_root, random_seed=args.seed)
+    set_global_seed(args.seed)
     embeddings_path = Path(args.embeddings_path).resolve() if args.embeddings_path else config.embeddings_dir / f"{args.split}_embeddings.npy"
     metadata_path = Path(args.metadata_path).resolve() if args.metadata_path else resolve_existing_table(
         config.embeddings_dir / f"{args.split}_metadata.parquet"
@@ -113,6 +121,19 @@ def main() -> None:
     summary["selected_assignments_path"] = str(selected_assignments_path)
     summary["selected_model_path"] = str(config.clusters_dir / "cluster_model.npz")
     write_json(summary, config.clusters_dir / "cluster_summary.json")
+    write_run_manifest(
+        config=config,
+        stage="cluster_states",
+        cli_args=vars(args),
+        output_dir=config.clusters_dir,
+        extra={
+            "embeddings_path": str(embeddings_path),
+            "metadata_path": str(metadata_path),
+            "cluster_summary_path": str(config.clusters_dir / "cluster_summary.json"),
+            "selected_k": int(best["k"]),
+            "selected_assignments_path": str(selected_assignments_path),
+        },
+    )
 
 
 if __name__ == "__main__":

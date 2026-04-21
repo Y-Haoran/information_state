@@ -1,0 +1,20 @@
+cff-version: 1.2.0
+message: "If you use Information State, please cite the software repository and associated manuscript draft."
+title: "Information State"
+type: software
+version: 0.1.0
+date-released: 2026-04-21
+license: MIT
+repository-code: "https://github.com/Y-Haoran/information_state"
+authors:
+  - name: "Information State contributors"
+abstract: >-
+  State-from-Observation is a representation-learning framework that treats ICU
+  EHR as an observation tensor with value, mask, and delta channels, then forms
+  latent clinical state through an observation-aware state formation operator.
+keywords:
+  - critical care
+  - MIMIC-IV
+  - representation learning
+  - self-supervised learning
+  - phenotyping

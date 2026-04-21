@@ -1,8 +1,10 @@
+"""Training entrypoint for State-from-Observation SSL pretraining."""
+
 from __future__ import annotations
 
 import argparse
-import json
 from pathlib import Path
+from typing import Sequence
 
 import torch
 from torch.utils.data import DataLoader
@@ -11,9 +13,11 @@ from .config import ProjectConfig
 from .contrastive import SymmetricInfoNCELoss
 from .observation_data import ObservationWindowPairDataset, build_state_from_observation_dataset
 from .state_from_observation import StateFromObservationModel
+from .utils import load_json, set_global_seed, write_json, write_run_manifest
 
 
-def parse_args() -> argparse.Namespace:
+def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
+    """Parse CLI arguments for SSL training."""
     parser = argparse.ArgumentParser(description="Train the State-from-Observation SSL model on whole MIMIC-IV.")
     parser.add_argument("--project-root", type=str, default=None)
     parser.add_argument("--raw-root", type=str, default=None)
@@ -35,11 +39,13 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--projection-dim", type=int, default=128)
     parser.add_argument("--dropout", type=float, default=0.1)
     parser.add_argument("--temperature", type=float, default=0.1)
+    parser.add_argument("--seed", type=int, default=7)
     parser.add_argument("--device", type=str, default="cuda" if torch.cuda.is_available() else "cpu")
-    return parser.parse_args()
+    return parser.parse_args(argv)
 
 
 def make_config(args: argparse.Namespace) -> ProjectConfig:
+    """Build the project config for a training run."""
     project_root = Path(args.project_root).resolve() if args.project_root else ProjectConfig().project_root
     raw_root = Path(args.raw_root).resolve() if args.raw_root else None
     return ProjectConfig(
@@ -53,10 +59,12 @@ def make_config(args: argparse.Namespace) -> ProjectConfig:
         max_stays=args.max_stays,
         chunk_size=args.chunk_size,
         max_chunks=args.max_chunks,
+        random_seed=args.seed,
     )
 
 
 def evaluate(model, criterion, loader, device) -> dict[str, float]:
+    """Evaluate the contrastive objective on a validation loader."""
     model.eval()
     total_examples = 0
     total_loss = 0.0
@@ -83,9 +91,11 @@ def evaluate(model, criterion, loader, device) -> dict[str, float]:
     }
 
 
-def main() -> None:
-    args = parse_args()
+def main(argv: Sequence[str] | None = None) -> None:
+    """Run SSL training and persist model, history, and reproducibility metadata."""
+    args = parse_args(argv)
     config = make_config(args)
+    set_global_seed(args.seed)
 
     expected_files = [
         config.observation_cohort_path,
@@ -98,8 +108,7 @@ def main() -> None:
     if args.build_data or not all(path.exists() for path in expected_files):
         build_state_from_observation_dataset(config)
 
-    with open(config.observation_metadata_path, "r", encoding="utf-8") as handle:
-        metadata = json.load(handle)
+    metadata = load_json(config.observation_metadata_path)
 
     train_dataset = ObservationWindowPairDataset(config, split="train")
     val_dataset = ObservationWindowPairDataset(config, split="val")
@@ -175,16 +184,42 @@ def main() -> None:
     if best_state is not None:
         model.load_state_dict(best_state)
 
-    torch.save(
-        {
-            "model_state_dict": model.state_dict(),
-            "metadata": metadata,
-            "config": vars(args),
+    model_config = {
+        "d_model": args.d_model,
+        "num_heads": args.num_heads,
+        "num_layers": args.num_layers,
+        "projection_dim": args.projection_dim,
+        "dropout": args.dropout,
+    }
+    checkpoint_payload = {
+        "model_state_dict": model.state_dict(),
+        "metadata": metadata,
+        "config": vars(args),
+        "model_config": model_config,
+        "best_val_retrieval_at_1": best_retrieval,
+    }
+    torch.save(checkpoint_payload, config.observation_checkpoint_path)
+    write_json(history, config.observation_history_path)
+    manifest_paths = write_run_manifest(
+        config=config,
+        stage="train_ssl",
+        cli_args=vars(args),
+        output_dir=config.state_from_observation_dir,
+        extra={
+            "artifacts": {
+                "checkpoint_path": str(config.observation_checkpoint_path),
+                "history_path": str(config.observation_history_path),
+            },
+            "model_config": model_config,
+            "train_dataset_size": len(train_dataset),
+            "val_dataset_size": len(val_dataset),
+            "history": history,
+            "best_val_retrieval_at_1": best_retrieval,
         },
-        config.observation_checkpoint_path,
     )
-    with open(config.observation_history_path, "w", encoding="utf-8") as handle:
-        json.dump(history, handle, indent=2)
+
+    checkpoint_payload["manifest_paths"] = manifest_paths
+    torch.save(checkpoint_payload, config.observation_checkpoint_path)
 
 
 if __name__ == "__main__":
