@@ -1,76 +1,94 @@
 # Information State
 
-`information_state` is a focused research software repository for `State-from-Observation`: a representation-learning framework that treats ICU EHR as an observation tensor rather than a flat time series.
+[![Release](https://img.shields.io/github/v/release/Y-Haoran/information_state)](https://github.com/Y-Haoran/information_state/releases)
+[![License](https://img.shields.io/github/license/Y-Haoran/information_state)](LICENSE)
+![Python](https://img.shields.io/badge/python-3.10%2B-blue)
+![Domain](https://img.shields.io/badge/domain-critical%20care-informational)
+![Status](https://img.shields.io/badge/status-research%20software-black)
+
+**State-from-Observation** is a representation-learning framework for ICU EHR that treats clinical data as an **observation tensor** rather than a flat time series. The repository is deliberately narrow: it exists to build the observation field, learn latent clinical state with self-supervision, cluster those states into candidate phenotypes, and test whether the learned representation is robust to changes in the observation process.
+
+> Clinical state is not directly observed. It is inferred from a stream of irregular observations, each carrying different amounts of information.
+
+## Overview
+
+At each time step `t` and variable `d`, the model consumes an observation triplet:
 
 ```text
-Input:
-O ∈ R^(T × D × 3)
-(value, mask, delta)
-
-      ↓
-Observation Encoder
-encode each triplet into local representation
-
-      ↓
-State Formation Operator
-jointly weigh information contribution
-across variable, time, and observation context
-
-      ↓
-State Aggregation
-pool all contextualized observations
-
-      ↓
-Latent Clinical State s
-
-      ↓
-SSL / clustering / downstream tasks
+o(t, d) = [value, mask, delta]
 ```
 
-## Why This Repo Exists
+where:
 
-The central claim is narrow:
+- `value` is the normalized and forward-filled measurement
+- `mask` indicates whether the variable was actually observed at that time
+- `delta` is the time since the last true observation
 
-- clinical state is not directly observed
-- ICU data should be modeled as irregular observation triplets
-- learned state should be sensitive to physiology but less brittle to observation density
+Instead of treating missingness as a nuisance after the fact, the model treats the observation process as part of the signal.
 
-This repo contains only the code needed to build, train, inspect, and stress-test that claim on MIMIC-IV.
+```mermaid
+flowchart LR
+    A["Observation Tensor O ∈ R^(T × D × 3)<br/>value · mask · delta"] --> B["Observation Encoder<br/>triplet → local representation"]
+    B --> C["State Formation Operator<br/>content + variable + time + observation context"]
+    C --> D["State Aggregation<br/>pool contextualized observations"]
+    D --> E["Latent Clinical State s"]
+    E --> F["SSL Pretraining"]
+    E --> G["Embedding Extraction"]
+    E --> H["Clustering and Phenotyping"]
+    E --> I["Observation Robustness Evaluation"]
+```
 
-## Package Layout
+## What This Repository Contains
 
-- `information_state/config.py`: project paths, feature definitions, artifact locations
-- `information_state/feature_catalog.py`: curated variable resolution against MIMIC-IV dictionaries
-- `information_state/observation_data.py`: hourly observation tensor construction and window datasets
-- `information_state/state_from_observation.py`: observation encoder and state formation operator
-- `information_state/contrastive.py`: symmetric InfoNCE objective
-- `information_state/train_ssl.py`: contrastive pretraining entrypoint
-- `information_state/extract_embeddings.py`: window-level latent state export
-- `information_state/cluster_states.py`: clustering into candidate latent phenotypes
-- `information_state/evaluate_phenotypes.py`: outcome, physiology, and transition summaries
-- `information_state/evaluate_observation_robustness.py`: embedding drift under observation thinning
-- `tests/`: tensor semantics, model-shape, and end-to-end synthetic smoke tests
-- `notebooks/01_state_from_observation_demo.ipynb`: protected-data-free concept demo
+| Area | Purpose |
+| --- | --- |
+| `information_state/config.py` | Project configuration, curated feature definitions, artifact paths |
+| `information_state/feature_catalog.py` | Resolution of curated variables against MIMIC-IV dictionaries |
+| `information_state/observation_data.py` | Cohort construction, hourly tensor building, sliding windows, dataset classes |
+| `information_state/state_from_observation.py` | Observation encoder, state formation operator, encoder model |
+| `information_state/contrastive.py` | Symmetric InfoNCE objective |
+| `information_state/train_ssl.py` | Self-supervised training entrypoint |
+| `information_state/extract_embeddings.py` | Window-level embedding export using `model.encode()` |
+| `information_state/cluster_states.py` | KMeans clustering of latent state windows |
+| `information_state/evaluate_phenotypes.py` | Outcome, physiology, and transition summaries by cluster |
+| `information_state/evaluate_observation_robustness.py` | Embedding drift under observation thinning |
+| `tests/` | Scientific-integrity and end-to-end synthetic smoke tests |
+| `notebooks/01_state_from_observation_demo.ipynb` | Data-free conceptual demo of the core mechanism |
 
-## Install
+## Design Principles
 
-For a lightweight setup:
+- **Observation-first**: the repo models what was measured, when it was measured, and how stale unmeasured values are.
+- **Narrow scope**: no unrelated baselines, classifiers, or treatment-policy tasks are mixed into this codebase.
+- **Reproducible artifacts**: each stage writes a `run_config.json` plus timestamped manifests with git and dataset provenance.
+- **Stress the claim directly**: robustness to observation thinning is treated as a first-class evaluation, not an afterthought.
+
+## Quick Start
+
+### 1. Install
+
+Lightweight environment:
 
 ```bash
 python3 -m pip install -r requirements.txt
 python3 -m pip install -e .
 ```
 
-For a pinned baseline matching the current bounded run:
+Pinned environment matching the current bounded run:
 
 ```bash
 python3 -m pip install -r requirements-lock.txt
 python3 -m pip install -e .
 ```
 
-## Run
+### 2. Run the Synthetic Smoke Test
 
-Train the SSL encoder:
+This does not require MIMIC-IV access and is the fastest way to verify that the full pipeline works:
+
+```bash
+python3 -m unittest discover -s tests
+```
+
+### 3. Train on MIMIC-IV
 
 ```bash
 python3 -m information_state.train_ssl \
@@ -93,7 +111,7 @@ python3 -m information_state.evaluate_phenotypes
 python3 -m information_state.evaluate_observation_robustness --split val --seed 7
 ```
 
-The same flow is also exposed as console scripts after `pip install -e .`:
+After editable install, the same workflow is also exposed as console scripts:
 
 - `information-state-train`
 - `information-state-extract`
@@ -101,9 +119,15 @@ The same flow is also exposed as console scripts after `pip install -e .`:
 - `information-state-evaluate`
 - `information-state-robustness`
 
-## What You Should See After Running
+## Expected Outputs
 
-Artifacts are written under `artifacts/state_from_observation/`. A complete bounded run now produces:
+The main artifact root is:
+
+```text
+artifacts/state_from_observation/
+```
+
+A complete run produces outputs like:
 
 ```text
 artifacts/state_from_observation/
@@ -118,50 +142,37 @@ artifacts/state_from_observation/
   run_config.json
   window_metadata.csv
   manifests/
-    train_ssl_latest.json
-    extract_embeddings_latest.json
-    cluster_states_latest.json
-    evaluate_phenotypes_latest.json
-    evaluate_observation_robustness_latest.json
   embeddings/
-    train_embeddings.npy
-    train_metadata.csv
-    val_embeddings.npy
-    val_metadata.csv
-    embedding_manifest.json
-    run_config.json
   clusters/
-    cluster_assignments.csv
-    cluster_model.npz
-    cluster_summary.json
-    run_config.json
   evaluation/
-    cluster_outcomes.csv
-    cluster_feature_profiles.csv
-    cluster_trajectory_profiles.csv
-    evaluation_report.md
-    run_config.json
   robustness/
-    robustness_metrics.csv
-    robustness_summary.json
-    embedding_drift_histogram.png
-    run_config.json
 ```
 
-### Concrete Bounded Run Example
+Stage-specific outputs:
 
-The repo currently includes a bounded real-data smoke run on a small MIMIC-IV subset. It is useful as a proof-of-work artifact, not as a paper-ready result.
+| Stage | Key outputs |
+| --- | --- |
+| Training | `state_from_observation_ssl.pt`, `ssl_history.json`, `run_config.json` |
+| Embeddings | `train_embeddings.npy`, `val_embeddings.npy`, `embedding_manifest.json` |
+| Clustering | `cluster_assignments.csv`, `cluster_model.npz`, `cluster_summary.json` |
+| Phenotype evaluation | `cluster_outcomes.csv`, `cluster_feature_profiles.csv`, `evaluation_report.md` |
+| Robustness | `robustness_metrics.csv`, `robustness_summary.json`, `embedding_drift_histogram.png` |
 
-Bounded run snapshot:
+## Bounded Real-Data Proof of Work
 
-- stays: `16`
-- windows: `450`
-- train embeddings: `(397, 32)`
-- selected clustering: `k=4`
-- train silhouette: `0.946`
-- train Davies-Bouldin: `0.956`
-- validation robustness cluster stability: `1.0`
-- robustness plot: `artifacts/state_from_observation/robustness/embedding_drift_histogram.png`
+The repository currently includes a **bounded real-data smoke run** on a small MIMIC-IV subset. This is useful as a proof that the pipeline executes end to end on real source tables. It is **not** presented as final scientific evidence.
+
+Current bounded-run snapshot:
+
+| Metric | Value |
+| --- | ---: |
+| stays | `16` |
+| windows | `450` |
+| train embeddings | `(397, 32)` |
+| selected clustering | `k = 4` |
+| train silhouette | `0.946` |
+| train Davies-Bouldin | `0.956` |
+| validation cluster stability under thinning | `1.000` |
 
 Example cluster outcome summary from `cluster_outcomes.csv`:
 
@@ -172,16 +183,16 @@ Example cluster outcome summary from `cluster_outcomes.csv`:
 | 2 | 7 | 1 | 0.000 | 15.613 |
 | 3 | 6 | 1 | 0.000 | 15.613 |
 
-These numbers come from the current local artifacts:
+Generated artifact references for that bounded run:
 
 - `artifacts/state_from_observation/embeddings/embedding_manifest.json`
 - `artifacts/state_from_observation/clusters/cluster_summary.json`
 - `artifacts/state_from_observation/evaluation/cluster_outcomes.csv`
 - `artifacts/state_from_observation/robustness/robustness_summary.json`
 
-## Reproducibility Contract
+## Reproducibility
 
-Each pipeline stage now writes both:
+Every major stage writes:
 
 - a stage-local `run_config.json`
 - a timestamped manifest under `artifacts/state_from_observation/manifests/`
@@ -189,56 +200,78 @@ Each pipeline stage now writes both:
 Those manifests include:
 
 - CLI arguments
-- serialized project config
+- serialized project configuration
 - git commit and dirty-state status
 - runtime context
 - dataset artifact hashes
 - output artifact paths
 
-That means a checkpoint or clustering result can be traced back to:
+This makes it possible to answer, for any checkpoint or downstream result:
 
-- code version
-- window length and stride
-- positive-pair gap
-- seed
-- dataset metadata and feature statistics
+- which code version produced it
+- which observation dataset artifacts were used
+- which window length, stride, and positive-pair gap were active
+- which random seed and runtime settings were used
 
-## Tests and Demo
+## Testing and Demo
 
-Scientific integrity checks live in `tests/`:
+The repo includes targeted checks for the scientific contract, not just generic unit tests.
 
-- tensor shape and binary mask semantics
-- delta reset and capping semantics
-- positive-window sampling gap rules
+Covered behaviors:
+
+- observation tensor shape and binary mask semantics
+- delta reset and capping logic
+- positive-window gap construction
 - model behavior on missing-heavy batches
 - full synthetic `train → extract → cluster → evaluate → robustness` smoke run
 
-Run them with:
+Run validation locally:
 
 ```bash
 python3 -m py_compile information_state/*.py
 python3 -m unittest discover -s tests
 ```
 
-For a data-free walkthrough of the idea itself, open:
+For a protected-data-free walkthrough of the central idea:
 
 - [notebooks/01_state_from_observation_demo.ipynb](notebooks/01_state_from_observation_demo.ipynb)
 
-## Scope Boundaries
+## What This Repo Does Not Try to Do
 
-This repo does not include:
+This repository does **not** include:
 
 - earlier blood-culture classifiers
-- unrelated treatment modeling tasks
+- broad benchmark collections unrelated to the state-formation claim
 - target trial emulation
-- large downstream benchmark suites outside the `State-from-Observation` claim
+- treatment-effect modeling
+- downstream tasks that would dilute the core method story
 
-That restriction is intentional. The goal is to keep the repo aligned with one scientific story.
+That restriction is intentional. The repository is meant to read as one coherent research software project rather than a mixed lab dump.
 
-## Citation and License
+## Project Status
 
-- citation metadata: [CITATION.cff](CITATION.cff)
-- manuscript draft: [NATURE_STYLE_MANUSCRIPT_DRAFT.md](NATURE_STYLE_MANUSCRIPT_DRAFT.md)
+This repo is in a strong **research software** state:
+
+- the end-to-end pipeline exists
+- synthetic and bounded real-data runs are working
+- the GitHub release, citation, license, and contribution metadata are in place
+
+What still belongs to future work rather than README overclaim:
+
+- large-scale full-corpus experiments
+- final baseline comparison tables
+- paper-grade figures and final statistical analysis
+
+## Citation
+
+If you use this repository, please cite the software metadata and the accompanying manuscript draft:
+
+- [CITATION.cff](CITATION.cff)
+- [NATURE_STYLE_MANUSCRIPT_DRAFT.md](NATURE_STYLE_MANUSCRIPT_DRAFT.md)
+
+## Repository Metadata
+
 - license: [LICENSE](LICENSE)
 - contribution guide: [CONTRIBUTING.md](CONTRIBUTING.md)
 - change history: [CHANGELOG.md](CHANGELOG.md)
+- release page: <https://github.com/Y-Haoran/information_state/releases>
