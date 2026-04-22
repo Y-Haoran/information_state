@@ -6,66 +6,80 @@
 ![Domain](https://img.shields.io/badge/domain-critical%20care-informational)
 ![Status](https://img.shields.io/badge/status-research%20software-black)
 
-**State-from-Observation** is a representation-learning framework for ICU EHR that treats clinical data as an **observation tensor** rather than a flat time series. The repository is deliberately narrow: it exists to build the observation field, learn latent clinical state with self-supervision, cluster those states into candidate phenotypes, and test whether the learned representation is robust to changes in the observation process.
+**State-from-Observation** is a research framework for learning patient state from irregular ICU measurements. Instead of flattening ICU data into an imputed time series, the method models three things jointly for every clinical variable and hour: the current value, whether it was truly observed, and how long it has been since the last observation.
+
+ICU data is not only incomplete; the observation process itself often carries signal. A variable may be missing because it was not clinically needed, while repeated measurements may reflect rising concern. This repository studies whether patient state can be learned from that observation process and then used for exploratory phenotype discovery, starting with AKI.
 
 > Clinical state is not directly observed. It is inferred from a stream of irregular observations, each carrying different amounts of information.
 
-## Overview
+## Why This Matters
 
-At each time step `t` and variable `d`, the model consumes an observation triplet:
+Most ICU models treat missingness as noise to be repaired before learning begins. This repo takes a different view: observation patterns are part of the phenotype. That makes the project useful for questions where the timing and density of measurements matter, such as renal deterioration, hemodynamic instability, and syndrome subtyping.
 
-```text
-o(t, d) = [value, mask, delta]
-```
+## What This Repo Does Right Now
 
-where:
+This repo currently supports an end-to-end exploratory pipeline for:
 
-- `value` is the normalized and forward-filled measurement
-- `mask` indicates whether the variable was actually observed at that time
-- `delta` is the time since the last true observation
+- building observation-based ICU tensors from MIMIC-IV
+- training a self-supervised State-from-Observation encoder
+- extracting window-level latent state embeddings
+- clustering those embeddings into candidate phenotypes
+- evaluating whether those groups are clinically different
+- testing whether learned states remain stable under observation thinning
 
-Instead of treating missingness as a nuisance after the fact, the model treats the observation process as part of the signal.
+## Current Takeaway
 
-```mermaid
-flowchart LR
-    A["Observation Tensor O ∈ R^(T × D × 3)<br/>value · mask · delta"] --> B["Observation Encoder<br/>triplet → local representation"]
-    B --> C["State Formation Operator<br/>content + variable + time + observation context"]
-    C --> D["State Aggregation<br/>pool contextualized observations"]
-    D --> E["Latent Clinical State s"]
-    E --> F["SSL Pretraining"]
-    E --> G["Embedding Extraction"]
-    E --> H["Clustering and Phenotyping"]
-    E --> I["Observation Robustness Evaluation"]
-```
+The current AKI pilot suggests that the method can recover clinically different **candidate** patient states from ICU measurement history. Those states differ in mortality and renal/hemodynamic signal profile, and they remain fairly stable under random observation thinning.
 
-## What This Repository Contains
+At the same time, the current results should still be read as **exploratory candidate phenotypes**, not final validated clinical subtypes.
 
-| Area | Purpose |
+| Question | Current answer |
 | --- | --- |
-| `information_state/config.py` | Project configuration, curated feature definitions, artifact paths |
-| `information_state/feature_catalog.py` | Resolution of curated variables against MIMIC-IV dictionaries |
-| `information_state/observation_data.py` | Cohort construction, hourly tensor building, sliding windows, dataset classes |
-| `information_state/state_from_observation.py` | Observation encoder, state formation operator, encoder model |
-| `information_state/contrastive.py` | Symmetric InfoNCE objective |
-| `information_state/train_ssl.py` | Self-supervised training entrypoint |
-| `information_state/extract_embeddings.py` | Window-level embedding export using `model.encode()` |
-| `information_state/cluster_states.py` | KMeans clustering of latent state windows |
-| `information_state/evaluate_phenotypes.py` | Outcome, physiology, and transition summaries by cluster |
-| `information_state/evaluate_aki_phenotypes.py` | AKI-specific renal trajectory and KDIGO phenotype summaries |
-| `information_state/evaluate_observation_robustness.py` | Embedding drift under observation thinning |
-| `tests/` | Scientific-integrity and end-to-end synthetic smoke tests |
-| `notebooks/01_state_from_observation_demo.ipynb` | Data-free conceptual demo of the core mechanism |
+| Can the model train stably on large MIMIC-IV builds? | Yes. |
+| Does the AKI pilot produce candidate phenotype structure? | Yes. |
+| Are these final validated clinical subtypes? | No. |
+| Is there a direct baseline comparison table yet? | No. |
 
-## Design Principles
+## AKI Pilot At A Glance
 
-- **Observation-first**: the repo models what was measured, when it was measured, and how stale unmeasured values are.
-- **Narrow scope**: no unrelated baselines, classifiers, or treatment-policy tasks are mixed into this codebase.
-- **Reproducible artifacts**: each stage writes a `run_config.json` plus timestamped manifests with git and dataset provenance.
-- **Stress the claim directly**: robustness to observation thinning is treated as a first-class evaluation, not an afterthought.
+The most complete current run is a full `aki_kdigo` end-to-end pilot:
+
+- `32,168` AKI ICU stays
+- `2,101,754` AKI windows
+- `20` training epochs
+- `10,000` clustered train embeddings
+- `5,000` robustness-evaluated validation windows
+
+<p align="center">
+  <img src="docs/assets/training_curve_aki_kdigo_20260422_gpu_v2_parallel.png" width="48%" alt="AKI SSL training curves">
+  <img src="docs/assets/aki_cluster_summary_aki_kdigo_20260422_gpu_v2_parallel.png" width="48%" alt="AKI cluster outcome and criterion summary">
+</p>
+<p align="center">
+  <img src="docs/assets/aki_cluster_trajectories_aki_kdigo_20260422_gpu_v2_parallel.png" width="48%" alt="AKI cluster trajectory profiles">
+  <img src="docs/assets/robustness_aki_kdigo_20260422_gpu_v2_parallel.png" width="48%" alt="AKI robustness histogram">
+</p>
+
+These figures show four different parts of the current story:
+
+- training is stable over the AKI pilot run
+- clusters separate meaningfully in mortality and KDIGO criterion pattern
+- clusters differ in creatinine, urine output, and MAP trajectory profile
+- embeddings remain moderately stable under observation thinning
+
+## What This Repo Is Not Claiming Yet
+
+This repo does **not** yet claim:
+
+- final validated AKI subtypes
+- treatment-sensitive phenotypes
+- superiority over baseline models without direct comparison tables
+- external validation across hospitals or datasets
+
+That boundary is intentional. The current repo is a serious phenotype-discovery and method-validation codebase, not a finished clinical decision system.
 
 ## Quick Start
 
-### 1. Install
+### Install
 
 Lightweight environment:
 
@@ -74,22 +88,24 @@ python3 -m pip install -r requirements.txt
 python3 -m pip install -e .
 ```
 
-Pinned environment matching the current bounded run:
+Pinned environment matching the current tracked runs:
 
 ```bash
 python3 -m pip install -r requirements-lock.txt
 python3 -m pip install -e .
 ```
 
-### 2. Run the Synthetic Smoke Test
+### Run The Synthetic Smoke Test
 
-This does not require MIMIC-IV access and is the fastest way to verify that the full pipeline works:
+This does not require MIMIC-IV access.
 
 ```bash
 python3 -m unittest discover -s tests
 ```
 
-### 3. Train on MIMIC-IV
+### Train On MIMIC-IV
+
+General adult ICU cohort:
 
 ```bash
 python3 -m information_state.train_ssl \
@@ -104,36 +120,7 @@ python3 -m information_state.train_ssl \
   --seed 7
 ```
 
-Then run the downstream stages:
-
-```bash
-python3 -m information_state.extract_embeddings --cohort all_adult_icu --split train val --seed 7
-python3 -m information_state.cluster_states --cohort all_adult_icu --split train --k 4 --seed 7
-python3 -m information_state.evaluate_phenotypes --cohort all_adult_icu
-python3 -m information_state.evaluate_observation_robustness --cohort all_adult_icu --split val --seed 7
-```
-
-After editable install, the same workflow is also exposed as console scripts:
-
-- `information-state-train`
-- `information-state-extract`
-- `information-state-cluster`
-- `information-state-evaluate`
-- `information-state-evaluate-aki`
-- `information-state-robustness`
-
-### 4. Run the AKI-Specific Cohort
-
-The repo now supports an AKI-only cohort path via `--cohort aki_kdigo`. This keeps the model unchanged and only changes the stay selection plus downstream artifacts.
-
-Current AKI cohort builder:
-
-- uses KDIGO-style serum-creatinine criteria
-- adds urine-output criteria when stay-level weight can be resolved from ICU charted weights
-- writes AKI onset/stage fields into both `cohort.csv` and `window_metadata.csv`
-- stores AKI artifacts separately under `artifacts/state_from_observation/aki_kdigo/`
-
-Example:
+AKI-specific cohort:
 
 ```bash
 python3 -m information_state.train_ssl \
@@ -148,7 +135,195 @@ python3 -m information_state.extract_embeddings --cohort aki_kdigo --split train
 python3 -m information_state.cluster_states --cohort aki_kdigo --split train --k 3 4 5 --seed 7
 python3 -m information_state.evaluate_phenotypes --cohort aki_kdigo
 python3 -m information_state.evaluate_aki_phenotypes --cohort aki_kdigo
+python3 -m information_state.evaluate_observation_robustness --cohort aki_kdigo --split val --seed 7
 ```
+
+After editable install, the same workflow is also exposed as console scripts:
+
+- `information-state-train`
+- `information-state-extract`
+- `information-state-cluster`
+- `information-state-evaluate`
+- `information-state-evaluate-aki`
+- `information-state-robustness`
+
+## Method Overview
+
+At each time step `t` and variable `d`, the model consumes an observation triplet:
+
+```text
+o(t, d) = [value, mask, delta]
+```
+
+where:
+
+- `value` is the normalized and forward-filled measurement
+- `mask` indicates whether the variable was actually observed at that time
+- `delta` is the time since the last true observation
+
+The model then forms patient state from those triplets rather than from a flat tokenized or imputed series.
+
+```mermaid
+flowchart LR
+    A["Observation Tensor O ∈ R^(T × D × 3)<br/>value · mask · delta"] --> B["Observation Encoder<br/>triplet → local representation"]
+    B --> C["State Formation Operator<br/>content + variable + time + observation context"]
+    C --> D["State Aggregation<br/>pool contextualized observations"]
+    D --> E["Latent Clinical State s"]
+    E --> F["SSL Pretraining"]
+    E --> G["Embedding Extraction"]
+    E --> H["Clustering and Phenotyping"]
+    E --> I["Observation Robustness Evaluation"]
+```
+
+## Current Results
+
+### AKI KDIGO End-to-End Pilot
+
+This is the strongest current syndrome-specific result in the repo.
+
+#### AKI Cohort Scale
+
+| Item | Value |
+| --- | ---: |
+| AKI stays | `32,168` |
+| AKI windows | `2,101,754` |
+| variables | `22` |
+| window length | `24h` |
+| window stride | `2h` |
+
+#### Training Snapshot
+
+This pilot used sampled positive pairs for tractable GPU training.
+
+| Item | Value |
+| --- | --- |
+| sampled train pairs | `300,000` |
+| sampled val pairs | `30,000` |
+| model width | `d_model = 128` |
+| attention heads | `4` |
+| layers | `3` |
+| epochs | `20` |
+| training device | `Tesla V100-SXM2-16GB` |
+
+Final optimization metrics:
+
+| Metric | Value |
+| --- | ---: |
+| best val loss | epoch `19`, `0.6397` |
+| best val Retrieval@1 | epoch `12`, `0.8606` |
+| final val loss | `0.6399` |
+| final val Retrieval@1 | `0.8588` |
+
+Exported embeddings:
+
+| Split | Shape |
+| --- | --- |
+| train | `(10000, 128)` |
+| val | `(5000, 128)` |
+| test | `(5000, 128)` |
+
+#### AKI Clustering Snapshot
+
+KMeans was run on the `10,000` train-window embedding sample.
+
+| k | Silhouette | Davies-Bouldin | Cluster sizes |
+| --- | ---: | ---: | --- |
+| `3` | `0.1176` | `2.4619` | `3617, 2752, 3631` |
+| `4` | `0.1139` | `2.2807` | `2289, 2488, 2456, 2767` |
+| `5` | `0.1153` | `2.1989` | `2065, 2038, 1742, 2056, 2099` |
+
+The selected clustering was `k = 3` by silhouette score.
+
+AKI cluster-level outcomes:
+
+| Cluster | Windows | Stays | Mortality | Mean AKI stage | Creatinine criterion | Urine-output criterion |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| `0` | `3617` | `80` | `0.227` | `2.42` | `0.765` | `0.568` |
+| `1` | `2752` | `73` | `0.379` | `2.30` | `0.900` | `0.352` |
+| `2` | `3631` | `90` | `0.449` | `2.45` | `0.913` | `0.500` |
+
+Provisional phenotype interpretation:
+
+- Cluster `0`: lower-mortality mixed renal state with high heart rate, relatively preserved MAP, and more combined creatinine plus urine-output involvement
+- Cluster `1`: creatinine-dominant, lab-dominant renal state with less urine-output involvement and intermediate mortality
+- Cluster `2`: hemodynamic-metabolic AKI state with lower MAP, lower bicarbonate, higher BUN/potassium, and the highest mortality
+
+AKI cluster signal heatmap:
+
+![AKI cluster signal heatmap](docs/assets/aki_cluster_heatmap_aki_kdigo_20260422_gpu_v2_parallel.png)
+
+#### AKI Observation Robustness
+
+Validation windows were perturbed with random observation thinning at drop probability `0.3`.
+
+| Metric | Value |
+| --- | ---: |
+| windows evaluated | `5000` |
+| mean embedding drift (L2) | `6.5012` |
+| median embedding drift (L2) | `6.2261` |
+| mean embedding cosine | `0.8009` |
+| cluster stability rate | `0.8670` |
+
+Scientific reading:
+
+- the repo is now finding **candidate phenotypes successfully**
+- the phenotype signal is meaningful enough to justify a real AKI paper package
+- the evidence is still exploratory, not yet definitive
+
+### General ICU Proof-Of-Concept Snapshot
+
+The repo also includes a broader general ICU proof-of-concept run on the full observation-field build, with training and downstream analysis done on sampled windows.
+
+Built corpus:
+
+| Item | Value |
+| --- | ---: |
+| data source | MIMIC-IV v3.1 |
+| adult ICU stays in built corpus | `74,829` |
+| hourly bins | `7,865,407` |
+| windows | `3,091,082` |
+| positive windows | `3,016,253` |
+| dynamic variables | `22` |
+
+Current subset-trained run:
+
+| Item | Value |
+| --- | --- |
+| sampled train pairs | `200,000` |
+| sampled val pairs | `20,000` |
+| epochs | `20` |
+| final val loss | `0.3247` |
+| final val Retrieval@1 | `0.9364` |
+| selected clustering | `k = 5` |
+| robustness cosine | `0.8237` |
+| cluster stability | `0.7294` |
+
+Those general ICU figures are kept in the repo as an earlier proof-of-concept:
+
+- `docs/assets/training_curve_subset_train_20260421_gpu_v1.png`
+- `docs/assets/cluster_outcomes_subset_train_20260421_gpu_v1.png`
+- `docs/assets/cluster_signal_heatmap_subset_train_20260421_gpu_v1.png`
+- `docs/assets/robustness_subset_train_20260421_gpu_v1.png`
+
+## Repository Map
+
+| Area | Purpose |
+| --- | --- |
+| `information_state/config.py` | Project configuration, curated feature definitions, artifact paths |
+| `information_state/feature_catalog.py` | Resolution of curated variables against MIMIC-IV dictionaries |
+| `information_state/observation_data.py` | Cohort construction, hourly tensor building, sliding windows, dataset classes |
+| `information_state/aki_cohort.py` | KDIGO-style AKI stay annotation and onset metadata |
+| `information_state/state_from_observation.py` | Observation encoder, state formation operator, encoder model |
+| `information_state/contrastive.py` | Symmetric InfoNCE objective |
+| `information_state/train_ssl.py` | Self-supervised training entrypoint |
+| `information_state/extract_embeddings.py` | Window-level embedding export using `model.encode()` |
+| `information_state/cluster_states.py` | KMeans clustering of latent state windows |
+| `information_state/evaluate_phenotypes.py` | Generic outcome, physiology, and transition summaries by cluster |
+| `information_state/evaluate_aki_phenotypes.py` | AKI-specific renal trajectory and KDIGO phenotype summaries |
+| `information_state/evaluate_observation_robustness.py` | Embedding drift under observation thinning |
+| `tests/` | Scientific-integrity and end-to-end synthetic smoke tests |
+| `notebooks/01_state_from_observation_demo.ipynb` | Data-free conceptual demo of the core mechanism |
+| `scripts/make_readme_figures.py` | Rebuild README figures from tracked run artifacts |
 
 ## Expected Outputs
 
@@ -195,264 +370,6 @@ Stage-specific outputs:
 | Phenotype evaluation | `cluster_outcomes.csv`, `cluster_feature_profiles.csv`, `evaluation_report.md` |
 | Robustness | `robustness_metrics.csv`, `robustness_summary.json`, `embedding_drift_histogram.png` |
 
-## Current Performance Snapshot
-
-The repository now includes a **current subset-trained real-data run** built on the full MIMIC-IV observation corpus, with training performed on sampled positive pairs and downstream analysis performed on sampled windows. This is a much stronger proof point than the earlier 16-patient smoke run, while still stopping short of a final paper-grade benchmark campaign.
-
-### Built Corpus
-
-The observation-field build used the full resolved cohort artifacts:
-
-| Item | Value |
-| --- | ---: |
-| data source | MIMIC-IV v3.1 |
-| adult ICU stays in built corpus | `74,829` |
-| hourly bins | `7,865,407` |
-| windows | `3,091,082` |
-| positive windows | `3,016,253` |
-| dynamic variables | `22` |
-
-### Current Training Run
-
-The finished training checkpoint comes from a train-only subset run over those full-build artifacts:
-
-| Item | Value |
-| --- | --- |
-| time bin | `1h` |
-| window length | `24h` |
-| window stride | `2h` |
-| positive pair gap | `2h` |
-| delta cap | `48h` |
-| sampled train pairs | `200,000` |
-| sampled val pairs | `20,000` |
-| model width | `d_model = 128` |
-| attention heads | `4` |
-| layers | `3` |
-| projection dim | `128` |
-| epochs | `20` |
-| training device | `Tesla V100-SXM2-16GB` |
-| training runtime | about `3.1h` |
-
-### Optimization Metrics
-
-The SSL objective behaved stably across the full 20-epoch run.
-
-| Metric | Train | Val |
-| --- | ---: | ---: |
-| final InfoNCE loss | `0.0210` | `0.3247` |
-| final Retrieval@1 | `0.9999` | `0.9364` |
-| final positive cosine | `0.9192` | `0.9913` |
-| best val loss | epoch `18`, `0.3241` |  |
-| best val Retrieval@1 | epoch `11`, `0.9375` |  |
-
-Interpretation:
-
-- the optimization curve is healthy and monotonic
-- validation loss continued to improve late into training
-- train retrieval saturated early, so the current positive-pair task is likely somewhat easy on this subset
-
-Current training dynamics:
-
-![Subset-trained SSL dynamics](docs/assets/training_curve_subset_train_20260421_gpu_v1.png)
-
-### Sampled Downstream Evaluation
-
-To keep downstream analysis tractable and honest, the current representation results are reported on sampled windows rather than all `3.09M` windows:
-
-| Split | Windows | Embedding shape |
-| --- | ---: | --- |
-| train sample for embeddings | `50,000` | `(50000, 128)` |
-| clustering sample from train embeddings | `5,000` | `(5000, 128)` |
-| val sample | `5,000` | `(5000, 128)` |
-| test sample | `5,000` | `(5000, 128)` |
-
-### Clustering Metrics
-
-KMeans was run on a randomized `5,000`-window train embedding sample.
-
-| k | Silhouette | Davies-Bouldin | Cluster sizes |
-| --- | ---: | ---: | --- |
-| `3` | `0.1044` | `2.6063` | `1977, 1407, 1616` |
-| `4` | `0.1127` | `2.3267` | `1229, 1475, 1156, 1140` |
-| `5` | `0.1152` | `2.2106` | `973, 929, 1123, 1050, 925` |
-| `6` | `0.1107` | `2.1452` | `847, 830, 968, 944, 644, 767` |
-
-The selected clustering was `k = 5` by silhouette score.
-
-Interpretation:
-
-- geometric separation is present but not yet strong
-- the current clusters are better read as exploratory latent states than final phenotype claims
-
-### Phenotype-Level Clinical Separation
-
-Even with modest geometric separation, the latent states show clinically different outcome profiles on the sampled train windows:
-
-| Cluster | Windows | Stays | Mortality | ICU LOS mean |
-| --- | ---: | ---: | ---: | ---: |
-| `0` | `973` | `308` | `0.105` | `8.51` |
-| `1` | `929` | `265` | `0.221` | `11.68` |
-| `2` | `1123` | `222` | `0.252` | `16.68` |
-| `3` | `1050` | `319` | `0.366` | `11.52` |
-| `4` | `925` | `243` | `0.314` | `13.03` |
-
-Examples from the generated phenotype report:
-
-- Cluster `0`: lower mortality, relatively higher blood pressure signal
-- Cluster `3`: highest mortality, lower `SBP/DBP/MAP` and lower bicarbonate
-- Cluster `4`: renal-heavy pattern with high `BUN` and `creatinine`
-
-Current cluster-level outcome separation:
-
-![Cluster-level clinical separation](docs/assets/cluster_outcomes_subset_train_20260421_gpu_v1.png)
-
-Current latent-state signal heatmap:
-
-![Cluster signal heatmap](docs/assets/cluster_signal_heatmap_subset_train_20260421_gpu_v1.png)
-
-### Observation Robustness
-
-Validation windows were perturbed by random observation thinning with drop probability `0.3`, evaluated on `5,000` validation windows.
-
-| Metric | Value |
-| --- | ---: |
-| windows evaluated | `5,000` |
-| mean embedding drift (L2) | `5.9184` |
-| median embedding drift (L2) | `5.6726` |
-| mean embedding cosine | `0.8237` |
-| cluster stability rate | `0.7294` |
-
-Interpretation:
-
-- the current encoder is **not** invariant to observation perturbation
-- this is scientifically useful: it shows the repo is now reporting a realistic robustness number rather than an artifact of a tiny smoke run
-- observation robustness remains an open target for improvement
-
-Current robustness output from this run:
-
-![Observation thinning robustness histogram](docs/assets/robustness_subset_train_20260421_gpu_v1.png)
-
-### Current Artifact References
-
-The current run writes the full metric trail needed to audit these numbers:
-
-- `artifacts/state_from_observation/ssl_history.json`
-- `artifacts/state_from_observation/embeddings/train_embeddings.npy`
-- `artifacts/state_from_observation/embeddings/val_embeddings.npy`
-- `artifacts/state_from_observation/clusters/cluster_summary.json`
-- `artifacts/state_from_observation/evaluation/cluster_outcomes.csv`
-- `artifacts/state_from_observation/evaluation/evaluation_report.md`
-- `artifacts/state_from_observation/robustness/robustness_summary.json`
-- `artifacts/state_from_observation/robustness/embedding_drift_histogram.png`
-- `scripts/make_readme_figures.py`
-
-## AKI KDIGO End-to-End Pilot
-
-The repository now also has a completed syndrome-specific run for `--cohort aki_kdigo`. This is the first full pilot that goes all the way through:
-
-- AKI cohort build
-- SSL training
-- embedding extraction
-- clustering
-- generic phenotype evaluation
-- AKI-specific phenotype evaluation
-- observation-robustness evaluation
-
-### AKI Cohort Scale
-
-| Item | Value |
-| --- | ---: |
-| AKI stays | `32,168` |
-| AKI windows | `2,101,754` |
-| variables | `22` |
-| window length | `24h` |
-| window stride | `2h` |
-
-### AKI Training Snapshot
-
-This pilot used sampled positive pairs for tractable GPU training.
-
-| Item | Value |
-| --- | --- |
-| sampled train pairs | `300,000` |
-| sampled val pairs | `30,000` |
-| model width | `d_model = 128` |
-| attention heads | `4` |
-| layers | `3` |
-| epochs | `20` |
-| training device | `Tesla V100-SXM2-16GB` |
-
-Final optimization metrics:
-
-| Metric | Value |
-| --- | ---: |
-| best val loss | epoch `19`, `0.6397` |
-| best val Retrieval@1 | epoch `12`, `0.8606` |
-| final val loss | `0.6399` |
-| final val Retrieval@1 | `0.8588` |
-
-Exported embeddings:
-
-| Split | Shape |
-| --- | --- |
-| train | `(10000, 128)` |
-| val | `(5000, 128)` |
-| test | `(5000, 128)` |
-
-### AKI Clustering Snapshot
-
-KMeans was run on the `10,000` train-window embedding sample.
-
-| k | Silhouette | Davies-Bouldin | Cluster sizes |
-| --- | ---: | ---: | --- |
-| `3` | `0.1176` | `2.4619` | `3617, 2752, 3631` |
-| `4` | `0.1139` | `2.2807` | `2289, 2488, 2456, 2767` |
-| `5` | `0.1153` | `2.1989` | `2065, 2038, 1742, 2056, 2099` |
-
-The selected clustering was `k = 3` by silhouette score.
-
-AKI cluster-level outcomes:
-
-| Cluster | Windows | Stays | Mortality | Mean AKI stage | Creatinine criterion | Urine-output criterion |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| `0` | `3617` | `80` | `0.227` | `2.42` | `0.765` | `0.568` |
-| `1` | `2752` | `73` | `0.379` | `2.30` | `0.900` | `0.352` |
-| `2` | `3631` | `90` | `0.449` | `2.45` | `0.913` | `0.500` |
-
-Provisional phenotype interpretation from the generated AKI report:
-
-- Cluster `0`: lower-mortality mixed renal state with high heart rate, relatively preserved MAP, and more combined creatinine plus urine-output involvement.
-- Cluster `1`: creatinine-dominant / lab-dominant renal state with less urine-output involvement and intermediate mortality.
-- Cluster `2`: hemodynamic-metabolic AKI state with lower MAP, lower bicarbonate, higher BUN/potassium, and the highest mortality.
-
-### AKI Observation Robustness
-
-Validation windows were perturbed with random observation thinning at drop probability `0.3`.
-
-| Metric | Value |
-| --- | ---: |
-| windows evaluated | `5000` |
-| mean embedding drift (L2) | `6.5012` |
-| median embedding drift (L2) | `6.2261` |
-| mean embedding cosine | `0.8009` |
-| cluster stability rate | `0.8670` |
-
-### What This Means
-
-The current AKI pilot is strong enough to say that the method is finding **candidate phenotypes successfully**:
-
-- the clusters are reproducible enough to survive end-to-end reruns
-- they differ in mortality and renal/hemodynamic signal profiles
-- they remain fairly stable under observation thinning
-
-What it does **not** justify yet:
-
-- claiming final validated AKI subphenotypes
-- claiming superiority over baselines without a direct comparison table
-- claiming treatment-sensitive phenotypes before the intervention analysis is added
-
-So the right scientific reading is: the repo now supports a credible AKI phenotype-discovery pilot, and the first syndrome-specific result is positive, but it is still a candidate-phenotype result rather than a final paper-grade subtype claim.
-
 ## Reproducibility
 
 Every major stage writes:
@@ -476,7 +393,7 @@ This makes it possible to answer, for any checkpoint or downstream result:
 - which window length, stride, and positive-pair gap were active
 - which random seed and runtime settings were used
 
-## Testing and Demo
+## Testing And Demo
 
 The repo includes targeted checks for the scientific contract, not just generic unit tests.
 
@@ -486,12 +403,12 @@ Covered behaviors:
 - delta reset and capping logic
 - positive-window gap construction
 - model behavior on missing-heavy batches
-- full synthetic `train → extract → cluster → evaluate → robustness` smoke run
+- full synthetic `train -> extract -> cluster -> evaluate -> robustness` smoke run
 
 Run validation locally:
 
 ```bash
-python3 -m py_compile information_state/*.py
+python3 -m py_compile information_state/*.py scripts/make_readme_figures.py
 python3 -m unittest discover -s tests
 ```
 
@@ -499,7 +416,7 @@ For a protected-data-free walkthrough of the central idea:
 
 - [notebooks/01_state_from_observation_demo.ipynb](notebooks/01_state_from_observation_demo.ipynb)
 
-## What This Repo Does Not Try to Do
+## Project Boundaries
 
 This repository does **not** include:
 
@@ -513,17 +430,18 @@ That restriction is intentional. The repository is meant to read as one coherent
 
 ## Project Status
 
-This repo is in a strong **research software** state:
+This repo is in a strong research-software state:
 
 - the end-to-end pipeline exists
-- synthetic, bounded, and subset-full-cohort real-data runs are working
+- synthetic, bounded, subset-full-cohort, and AKI syndrome-specific runs are working
 - the GitHub release, citation, license, and contribution metadata are in place
 
 What still belongs to future work rather than README overclaim:
 
-- large-scale full-corpus experiments
-- final baseline comparison tables
-- paper-grade figures and final statistical analysis
+- direct baseline comparison tables
+- intervention or treatment-sensitivity analysis
+- external validation
+- final paper-grade figures and formal statistics
 
 ## Citation
 
