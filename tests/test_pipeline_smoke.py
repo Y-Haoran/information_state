@@ -4,7 +4,14 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from information_state import cluster_states, evaluate_observation_robustness, evaluate_phenotypes, extract_embeddings, train_ssl
+from information_state import (
+    cluster_states,
+    evaluate_aki_phenotypes,
+    evaluate_observation_robustness,
+    evaluate_phenotypes,
+    extract_embeddings,
+    train_ssl,
+)
 from information_state.utils import resolve_existing_table
 from tests.support import create_synthetic_project
 
@@ -66,6 +73,7 @@ class PipelineSmokeTests(unittest.TestCase):
             )
             cluster_states.main(["--project-root", str(root), "--split", "train", "--k", "2", "--seed", "5"])
             evaluate_phenotypes.main(["--project-root", str(root)])
+            evaluate_aki_phenotypes.main(["--project-root", str(root), "--cohort", "all_adult_icu"])
             evaluate_observation_robustness.main(
                 [
                     "--project-root",
@@ -96,6 +104,7 @@ class PipelineSmokeTests(unittest.TestCase):
             self.assertTrue((config.robustness_dir / "embedding_drift_histogram.png").exists())
             self.assertTrue(resolve_existing_table(config.clusters_dir / "cluster_assignments.parquet").exists())
             self.assertTrue(resolve_existing_table(config.evaluation_dir / "cluster_outcomes.parquet").exists())
+            self.assertTrue(resolve_existing_table(config.evaluation_dir / "aki_cluster_outcomes.parquet").exists())
 
 
 if __name__ == "__main__":

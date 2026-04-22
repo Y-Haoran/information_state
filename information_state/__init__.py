@@ -14,6 +14,7 @@ __all__ = [
     "extract_embeddings",
     "cluster_states",
     "evaluate_phenotypes",
+    "evaluate_aki_phenotypes",
     "evaluate_observation_robustness",
     "utils",
 ]

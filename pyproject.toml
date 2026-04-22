@@ -32,6 +32,7 @@ information-state-train = "information_state.train_ssl:main"
 information-state-extract = "information_state.extract_embeddings:main"
 information-state-cluster = "information_state.cluster_states:main"
 information-state-evaluate = "information_state.evaluate_phenotypes:main"
+information-state-evaluate-aki = "information_state.evaluate_aki_phenotypes:main"
 information-state-robustness = "information_state.evaluate_observation_robustness:main"
 
 [tool.setuptools.packages.find]

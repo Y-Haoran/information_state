@@ -51,6 +51,7 @@ flowchart LR
 | `information_state/extract_embeddings.py` | Window-level embedding export using `model.encode()` |
 | `information_state/cluster_states.py` | KMeans clustering of latent state windows |
 | `information_state/evaluate_phenotypes.py` | Outcome, physiology, and transition summaries by cluster |
+| `information_state/evaluate_aki_phenotypes.py` | AKI-specific renal trajectory and KDIGO phenotype summaries |
 | `information_state/evaluate_observation_robustness.py` | Embedding drift under observation thinning |
 | `tests/` | Scientific-integrity and end-to-end synthetic smoke tests |
 | `notebooks/01_state_from_observation_demo.ipynb` | Data-free conceptual demo of the core mechanism |
@@ -118,6 +119,7 @@ After editable install, the same workflow is also exposed as console scripts:
 - `information-state-extract`
 - `information-state-cluster`
 - `information-state-evaluate`
+- `information-state-evaluate-aki`
 - `information-state-robustness`
 
 ### 4. Run the AKI-Specific Cohort
@@ -141,6 +143,11 @@ python3 -m information_state.train_ssl \
   --epochs 20 \
   --batch-size 32 \
   --seed 7
+
+python3 -m information_state.extract_embeddings --cohort aki_kdigo --split train val test --seed 7
+python3 -m information_state.cluster_states --cohort aki_kdigo --split train --k 3 4 5 --seed 7
+python3 -m information_state.evaluate_phenotypes --cohort aki_kdigo
+python3 -m information_state.evaluate_aki_phenotypes --cohort aki_kdigo
 ```
 
 ## Expected Outputs
