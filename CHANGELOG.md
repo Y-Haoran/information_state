@@ -1,5 +1,10 @@
 # Changelog
 
+## [Unreleased]
+
+- Added the completed `aki_kdigo` pilot run summary to the README, including cohort scale,
+  training metrics, clustering metrics, robustness metrics, and provisional phenotype interpretation.
+
 ## [0.1.0] - 2026-04-21
 
 - Refocused the repository on the `State-from-Observation` research pipeline.

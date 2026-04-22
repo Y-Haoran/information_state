@@ -346,6 +346,113 @@ The current run writes the full metric trail needed to audit these numbers:
 - `artifacts/state_from_observation/robustness/embedding_drift_histogram.png`
 - `scripts/make_readme_figures.py`
 
+## AKI KDIGO End-to-End Pilot
+
+The repository now also has a completed syndrome-specific run for `--cohort aki_kdigo`. This is the first full pilot that goes all the way through:
+
+- AKI cohort build
+- SSL training
+- embedding extraction
+- clustering
+- generic phenotype evaluation
+- AKI-specific phenotype evaluation
+- observation-robustness evaluation
+
+### AKI Cohort Scale
+
+| Item | Value |
+| --- | ---: |
+| AKI stays | `32,168` |
+| AKI windows | `2,101,754` |
+| variables | `22` |
+| window length | `24h` |
+| window stride | `2h` |
+
+### AKI Training Snapshot
+
+This pilot used sampled positive pairs for tractable GPU training.
+
+| Item | Value |
+| --- | --- |
+| sampled train pairs | `300,000` |
+| sampled val pairs | `30,000` |
+| model width | `d_model = 128` |
+| attention heads | `4` |
+| layers | `3` |
+| epochs | `20` |
+| training device | `Tesla V100-SXM2-16GB` |
+
+Final optimization metrics:
+
+| Metric | Value |
+| --- | ---: |
+| best val loss | epoch `19`, `0.6397` |
+| best val Retrieval@1 | epoch `12`, `0.8606` |
+| final val loss | `0.6399` |
+| final val Retrieval@1 | `0.8588` |
+
+Exported embeddings:
+
+| Split | Shape |
+| --- | --- |
+| train | `(10000, 128)` |
+| val | `(5000, 128)` |
+| test | `(5000, 128)` |
+
+### AKI Clustering Snapshot
+
+KMeans was run on the `10,000` train-window embedding sample.
+
+| k | Silhouette | Davies-Bouldin | Cluster sizes |
+| --- | ---: | ---: | --- |
+| `3` | `0.1176` | `2.4619` | `3617, 2752, 3631` |
+| `4` | `0.1139` | `2.2807` | `2289, 2488, 2456, 2767` |
+| `5` | `0.1153` | `2.1989` | `2065, 2038, 1742, 2056, 2099` |
+
+The selected clustering was `k = 3` by silhouette score.
+
+AKI cluster-level outcomes:
+
+| Cluster | Windows | Stays | Mortality | Mean AKI stage | Creatinine criterion | Urine-output criterion |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| `0` | `3617` | `80` | `0.227` | `2.42` | `0.765` | `0.568` |
+| `1` | `2752` | `73` | `0.379` | `2.30` | `0.900` | `0.352` |
+| `2` | `3631` | `90` | `0.449` | `2.45` | `0.913` | `0.500` |
+
+Provisional phenotype interpretation from the generated AKI report:
+
+- Cluster `0`: lower-mortality mixed renal state with high heart rate, relatively preserved MAP, and more combined creatinine plus urine-output involvement.
+- Cluster `1`: creatinine-dominant / lab-dominant renal state with less urine-output involvement and intermediate mortality.
+- Cluster `2`: hemodynamic-metabolic AKI state with lower MAP, lower bicarbonate, higher BUN/potassium, and the highest mortality.
+
+### AKI Observation Robustness
+
+Validation windows were perturbed with random observation thinning at drop probability `0.3`.
+
+| Metric | Value |
+| --- | ---: |
+| windows evaluated | `5000` |
+| mean embedding drift (L2) | `6.5012` |
+| median embedding drift (L2) | `6.2261` |
+| mean embedding cosine | `0.8009` |
+| cluster stability rate | `0.8670` |
+
+### What This Means
+
+The current AKI pilot is strong enough to say that the method is finding **candidate phenotypes successfully**:
+
+- the clusters are reproducible enough to survive end-to-end reruns
+- they differ in mortality and renal/hemodynamic signal profiles
+- they remain fairly stable under observation thinning
+
+What it does **not** justify yet:
+
+- claiming final validated AKI subphenotypes
+- claiming superiority over baselines without a direct comparison table
+- claiming treatment-sensitive phenotypes before the intervention analysis is added
+
+So the right scientific reading is: the repo now supports a credible AKI phenotype-discovery pilot, and the first syndrome-specific result is positive, but it is still a candidate-phenotype result rather than a final paper-grade subtype claim.
+
 ## Reproducibility
 
 Every major stage writes:
