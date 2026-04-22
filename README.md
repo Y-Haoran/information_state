@@ -214,6 +214,10 @@ Interpretation:
 - validation loss continued to improve late into training
 - train retrieval saturated early, so the current positive-pair task is likely somewhat easy on this subset
 
+Current training dynamics:
+
+![Subset-trained SSL dynamics](docs/assets/training_curve_subset_train_20260421_gpu_v1.png)
+
 ### Sampled Downstream Evaluation
 
 To keep downstream analysis tractable and honest, the current representation results are reported on sampled windows rather than all `3.09M` windows:
@@ -261,6 +265,14 @@ Examples from the generated phenotype report:
 - Cluster `3`: highest mortality, lower `SBP/DBP/MAP` and lower bicarbonate
 - Cluster `4`: renal-heavy pattern with high `BUN` and `creatinine`
 
+Current cluster-level outcome separation:
+
+![Cluster-level clinical separation](docs/assets/cluster_outcomes_subset_train_20260421_gpu_v1.png)
+
+Current latent-state signal heatmap:
+
+![Cluster signal heatmap](docs/assets/cluster_signal_heatmap_subset_train_20260421_gpu_v1.png)
+
 ### Observation Robustness
 
 Validation windows were perturbed by random observation thinning with drop probability `0.3`, evaluated on `5,000` validation windows.
@@ -295,6 +307,7 @@ The current run writes the full metric trail needed to audit these numbers:
 - `artifacts/state_from_observation/evaluation/evaluation_report.md`
 - `artifacts/state_from_observation/robustness/robustness_summary.json`
 - `artifacts/state_from_observation/robustness/embedding_drift_histogram.png`
+- `scripts/make_readme_figures.py`
 
 ## Reproducibility
 
