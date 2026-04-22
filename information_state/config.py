@@ -23,6 +23,7 @@ class ProjectConfig:
     project_root: Path = field(default_factory=lambda: Path(__file__).resolve().parents[1])
     raw_root: Path | None = None
     cohort_name: str = "all_adult_icu"
+    build_workers: int = 1
     bin_hours: int = 1
     window_hours: int = 24
     window_stride_hours: int = 2
@@ -50,6 +51,8 @@ class ProjectConfig:
             self.cohort_name = "aki_kdigo"
         if self.cohort_name not in {"all_adult_icu", "aki_kdigo"}:
             raise ValueError(f"Unsupported cohort_name={self.cohort_name!r}.")
+        if self.build_workers < 1:
+            raise ValueError("build_workers must be at least 1.")
 
         hour_fields = {
             "window_hours": self.window_hours,

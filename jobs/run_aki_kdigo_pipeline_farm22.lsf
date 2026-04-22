@@ -41,6 +41,7 @@ python3 -u -m information_state.train_ssl \
   --project-root "${RUN_ROOT}" \
   --raw-root "${RAW_ROOT}" \
   --cohort aki_kdigo \
+  --build-workers 8 \
   --build-data \
   --window-hours 24 \
   --window-stride-hours 2 \

@@ -22,6 +22,7 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--project-root", type=str, default=None)
     parser.add_argument("--raw-root", type=str, default=None)
     parser.add_argument("--cohort", type=str, default="all_adult_icu")
+    parser.add_argument("--build-workers", type=int, default=1)
     parser.add_argument("--build-data", action="store_true")
     parser.add_argument("--window-hours", type=int, default=24)
     parser.add_argument("--window-stride-hours", type=int, default=2)
@@ -55,6 +56,7 @@ def make_config(args: argparse.Namespace) -> ProjectConfig:
         project_root=project_root,
         raw_root=raw_root,
         cohort_name=args.cohort,
+        build_workers=args.build_workers,
         bin_hours=1,
         window_hours=args.window_hours,
         window_stride_hours=args.window_stride_hours,

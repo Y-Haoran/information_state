@@ -8,6 +8,7 @@ It does not currently model renal replacement therapy as an AKI stage-3 trigger.
 
 from __future__ import annotations
 
+from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
 
 import numpy as np
@@ -44,6 +45,58 @@ def _empty_aki_result() -> dict[str, float | int | None]:
         "aki_baseline_creatinine": np.nan,
         "aki_weight_kg": np.nan,
     }
+
+
+def _annotate_single_stay(payload: tuple[int, pd.Timestamp, pd.Timestamp, int, pd.DataFrame, pd.DataFrame, pd.DataFrame]) -> dict[str, float | int | None]:
+    stay_id, stay_start, stay_end, bin_hours, creatinine_events, urine_events, weight_events = payload
+    creatinine_result = detect_aki_from_creatinine(
+        creatinine_events,
+        stay_start=stay_start,
+        stay_end=stay_end,
+    )
+    weight_kg = resolve_stay_weight(weight_events, stay_start=stay_start)
+    urine_result = detect_aki_from_urine_output(
+        urine_events,
+        weight_kg=weight_kg,
+        stay_start=stay_start,
+        stay_end=stay_end,
+        bin_hours=bin_hours,
+    )
+
+    onset_candidates = [
+        value
+        for value in [creatinine_result["aki_onset_hour_creatinine"], urine_result["aki_onset_hour_urine_output"]]
+        if pd.notna(value)
+    ]
+    return {
+        "stay_id": int(stay_id),
+        "aki": int(creatinine_result["aki_creatinine"] or urine_result["aki_urine_output"]),
+        "aki_stage": int(max(creatinine_result["aki_stage_creatinine"], urine_result["aki_stage_urine_output"])),
+        "aki_creatinine": int(creatinine_result["aki_creatinine"]),
+        "aki_stage_creatinine": int(creatinine_result["aki_stage_creatinine"]),
+        "aki_urine_output": int(urine_result["aki_urine_output"]),
+        "aki_stage_urine_output": int(urine_result["aki_stage_urine_output"]),
+        "aki_onset_hour": float(min(onset_candidates)) if onset_candidates else np.nan,
+        "aki_onset_bin": float(min(onset_candidates) // bin_hours) if onset_candidates else np.nan,
+        "aki_onset_hour_creatinine": creatinine_result["aki_onset_hour_creatinine"],
+        "aki_onset_hour_urine_output": urine_result["aki_onset_hour_urine_output"],
+        "aki_baseline_creatinine": creatinine_result["aki_baseline_creatinine"],
+        "aki_weight_kg": float(weight_kg) if weight_kg is not None else np.nan,
+    }
+
+
+def _annotate_stay_batch(
+    payload_batch: list[tuple[int, pd.Timestamp, pd.Timestamp, int, pd.DataFrame, pd.DataFrame, pd.DataFrame]]
+) -> list[dict[str, float | int | None]]:
+    return [_annotate_single_stay(payload) for payload in payload_batch]
+
+
+def _batched_payloads(
+    payloads: list[tuple[int, pd.Timestamp, pd.Timestamp, int, pd.DataFrame, pd.DataFrame, pd.DataFrame]],
+    batch_size: int,
+):
+    for start in range(0, len(payloads), batch_size):
+        yield payloads[start:start + batch_size]
 
 
 def detect_aki_from_creatinine(
@@ -380,47 +433,36 @@ def annotate_aki_stays(cohort: pd.DataFrame, config: ProjectConfig, catalog: dic
         for stay_id, frame in weight_events.groupby("stay_id")
     }
 
-    annotations = []
+    stay_payloads = []
     iter_columns = ["stay_id", "intime", "outtime"]
-    for row in tqdm(cohort[iter_columns].itertuples(index=False), total=len(cohort), desc="AKI annotate"):
-        creatinine_result = detect_aki_from_creatinine(
-            creatinine_by_stay.get(int(row.stay_id), pd.DataFrame(columns=["charttime", "creatinine"])),
-            stay_start=pd.Timestamp(row.intime),
-            stay_end=pd.Timestamp(row.outtime),
-        )
-        weight_kg = resolve_stay_weight(
-            weight_by_stay.get(int(row.stay_id), pd.DataFrame(columns=["charttime", "weight_kg"])),
-            stay_start=pd.Timestamp(row.intime),
-        )
-        urine_result = detect_aki_from_urine_output(
-            urine_by_stay.get(int(row.stay_id), pd.DataFrame(columns=["charttime", "urine_output_ml"])),
-            weight_kg=weight_kg,
-            stay_start=pd.Timestamp(row.intime),
-            stay_end=pd.Timestamp(row.outtime),
-            bin_hours=config.bin_hours,
+    for row in cohort[iter_columns].itertuples(index=False):
+        stay_id = int(row.stay_id)
+        stay_payloads.append(
+            (
+                stay_id,
+                pd.Timestamp(row.intime),
+                pd.Timestamp(row.outtime),
+                int(config.bin_hours),
+                creatinine_by_stay.get(stay_id, pd.DataFrame(columns=["charttime", "creatinine"])),
+                urine_by_stay.get(stay_id, pd.DataFrame(columns=["charttime", "urine_output_ml"])),
+                weight_by_stay.get(stay_id, pd.DataFrame(columns=["charttime", "weight_kg"])),
+            )
         )
 
-        onset_candidates = [
-            value
-            for value in [creatinine_result["aki_onset_hour_creatinine"], urine_result["aki_onset_hour_urine_output"]]
-            if pd.notna(value)
-        ]
-        combined = {
-            "stay_id": int(row.stay_id),
-            "aki": int(creatinine_result["aki_creatinine"] or urine_result["aki_urine_output"]),
-            "aki_stage": int(max(creatinine_result["aki_stage_creatinine"], urine_result["aki_stage_urine_output"])),
-            "aki_creatinine": int(creatinine_result["aki_creatinine"]),
-            "aki_stage_creatinine": int(creatinine_result["aki_stage_creatinine"]),
-            "aki_urine_output": int(urine_result["aki_urine_output"]),
-            "aki_stage_urine_output": int(urine_result["aki_stage_urine_output"]),
-            "aki_onset_hour": float(min(onset_candidates)) if onset_candidates else np.nan,
-            "aki_onset_bin": float(min(onset_candidates) // config.bin_hours) if onset_candidates else np.nan,
-            "aki_onset_hour_creatinine": creatinine_result["aki_onset_hour_creatinine"],
-            "aki_onset_hour_urine_output": urine_result["aki_onset_hour_urine_output"],
-            "aki_baseline_creatinine": creatinine_result["aki_baseline_creatinine"],
-            "aki_weight_kg": float(weight_kg) if weight_kg is not None else np.nan,
-        }
-        annotations.append(combined)
+    annotations: list[dict[str, float | int | None]] = []
+    if config.build_workers <= 1 or len(stay_payloads) <= 1:
+        for payload in tqdm(stay_payloads, total=len(stay_payloads), desc="AKI annotate"):
+            annotations.append(_annotate_single_stay(payload))
+    else:
+        batch_size = max(32, len(stay_payloads) // max(config.build_workers * 8, 1))
+        batches = list(_batched_payloads(stay_payloads, batch_size))
+        with ProcessPoolExecutor(max_workers=config.build_workers) as executor:
+            for batch_annotations in tqdm(
+                executor.map(_annotate_stay_batch, batches, chunksize=1),
+                total=len(batches),
+                desc="AKI annotate",
+            ):
+                annotations.extend(batch_annotations)
 
     annotations_frame = pd.DataFrame(annotations)
     return cohort.merge(annotations_frame, on="stay_id", how="left")
