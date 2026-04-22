@@ -1,18 +1,18 @@
 #!/bin/bash
-#BSUB -J info_state_aki_kdigo
+#BSUB -J info_state_aki_kdigo_v2
 #BSUB -q gpu-huge
 #BSUB -n 8
 #BSUB -gpu "num=1"
 #BSUB -R "select[mem>64000] rusage[mem=64000] span[hosts=1]"
 #BSUB -M 64000
 #BSUB -W 48:00
-#BSUB -oo /nfs/users/nfs_d/ds39/information_state_runs/aki_kdigo_20260422_gpu_v1/logs/%J.out
-#BSUB -eo /nfs/users/nfs_d/ds39/information_state_runs/aki_kdigo_20260422_gpu_v1/logs/%J.err
+#BSUB -oo /nfs/users/nfs_d/ds39/information_state_runs/aki_kdigo_20260422_gpu_v2_parallel/logs/%J.out
+#BSUB -eo /nfs/users/nfs_d/ds39/information_state_runs/aki_kdigo_20260422_gpu_v2_parallel/logs/%J.err
 
 set -euo pipefail
 
 CODE_ROOT="/nfs/users/nfs_d/ds39/git_repos/information_state"
-RUN_ROOT="/nfs/users/nfs_d/ds39/information_state_runs/aki_kdigo_20260422_gpu_v1"
+RUN_ROOT="/nfs/users/nfs_d/ds39/information_state_runs/aki_kdigo_20260422_gpu_v2_parallel"
 RAW_ROOT="/lustre/scratch127/mave/sge_analysis/team229/ds39/RD/LLaMA-Mesh/patient_AI/redownload_mimiciv_v3_1/physionet.org/files/mimiciv/3.1"
 
 mkdir -p "${RUN_ROOT}/logs"
