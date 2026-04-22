@@ -12,6 +12,15 @@ ICU data is not only incomplete; the observation process itself often carries si
 
 > Clinical state is not directly observed. It is inferred from a stream of irregular observations, each carrying different amounts of information.
 
+```mermaid
+flowchart LR
+    A["Irregular ICU observations<br/>value + missingness + timing"] --> B["Observation tensor<br/>O[t, d] = [value, mask, delta]"]
+    B --> C["State-from-Observation encoder"]
+    C --> D["Latent patient state"]
+    D --> E["Candidate phenotypes"]
+    D --> F["Robustness to observation thinning"]
+```
+
 ## Why This Matters
 
 Most ICU models treat missingness as noise to be repaired before learning begins. This repo takes a different view: observation patterns are part of the phenotype. That makes the project useful for questions where the timing and density of measurements matter, such as renal deterioration, hemodynamic instability, and syndrome subtyping.
@@ -76,6 +85,20 @@ This repo does **not** yet claim:
 - external validation across hospitals or datasets
 
 That boundary is intentional. The current repo is a serious phenotype-discovery and method-validation codebase, not a finished clinical decision system.
+
+## Baseline Strategy
+
+For a first paper-quality comparison, the most reasonable baselines are:
+
+- **XGBoost or Random Forest on window summaries**: a strong tabular baseline using aggregated features from each window, such as means, extrema, slopes, mask density, and delta statistics.
+- **Flat sequence baseline**: a GRU or Transformer trained on the same `value / mask / delta` windows but without the observation-aware state formation operator.
+
+The important distinction is:
+
+- XGBoost or Random Forest is a good baseline for showing that simple supervised structure can be extracted from summarized windows.
+- A flat GRU or Transformer is the more direct architectural baseline for the core scientific claim.
+
+So yes, `XGBoost` and `RandomForest` are reasonable and useful baselines, but they should complement, not replace, a flat time-series neural baseline.
 
 ## Quick Start
 
