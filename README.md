@@ -158,122 +158,143 @@ Stage-specific outputs:
 | Phenotype evaluation | `cluster_outcomes.csv`, `cluster_feature_profiles.csv`, `evaluation_report.md` |
 | Robustness | `robustness_metrics.csv`, `robustness_summary.json`, `embedding_drift_histogram.png` |
 
-## Bounded Real-Data Proof of Work
+## Current Performance Snapshot
 
-The repository currently includes a **bounded real-data smoke run** on a small MIMIC-IV subset. This is useful as a proof that the pipeline executes end to end on real source tables. It is **not** presented as final scientific evidence.
+The repository now includes a **current subset-trained real-data run** built on the full MIMIC-IV observation corpus, with training performed on sampled positive pairs and downstream analysis performed on sampled windows. This is a much stronger proof point than the earlier 16-patient smoke run, while still stopping short of a final paper-grade benchmark campaign.
 
-### Was the Model Trained?
+### Built Corpus
 
-Yes, but only in a bounded smoke-run setting intended to validate the full pipeline on real MIMIC-IV tables.
+The observation-field build used the full resolved cohort artifacts:
 
-Current bounded training setup:
+| Item | Value |
+| --- | ---: |
+| data source | MIMIC-IV v3.1 |
+| adult ICU stays in built corpus | `74,829` |
+| hourly bins | `7,865,407` |
+| windows | `3,091,082` |
+| positive windows | `3,016,253` |
+| dynamic variables | `22` |
+
+### Current Training Run
+
+The finished training checkpoint comes from a train-only subset run over those full-build artifacts:
 
 | Item | Value |
 | --- | --- |
-| data source | MIMIC-IV v3.1 |
 | time bin | `1h` |
 | window length | `24h` |
 | window stride | `2h` |
 | positive pair gap | `2h` |
-| dynamic variables | `22` |
 | delta cap | `48h` |
-| model width | `d_model = 32` |
+| sampled train pairs | `200,000` |
+| sampled val pairs | `20,000` |
+| model width | `d_model = 128` |
 | attention heads | `4` |
 | layers | `3` |
-| projection dim | `32` |
-| epochs | `1` |
-| device | `cpu` |
+| projection dim | `128` |
+| epochs | `20` |
+| training device | `Tesla V100-SXM2-16GB` |
+| training runtime | about `3.1h` |
 
-### Dataset Size for the Current Trained Run
+### Optimization Metrics
 
-The current trained checkpoint was produced from a bounded subset with the following scale:
-
-| Split | Stays | Subjects | Windows | Positive windows |
-| --- | ---: | ---: | ---: | ---: |
-| train | 11 | 11 | 397 | 386 |
-| val | 2 | 2 | 29 | 27 |
-| test | 3 | 3 | 24 | 21 |
-| total | 16 | 16 | 450 | 434 |
-
-Current bounded-run snapshot:
-
-| Metric | Value |
-| --- | ---: |
-| stays | `16` |
-| windows | `450` |
-| train embeddings | `(397, 32)` |
-| selected clustering | `k = 4` |
-| train silhouette | `0.946` |
-| train Davies-Bouldin | `0.956` |
-| validation cluster stability under thinning | `1.000` |
-
-Example cluster outcome summary from `cluster_outcomes.csv`:
-
-| cluster | n_windows | n_stays | mortality_rate | icu_los_days_mean |
-| --- | ---: | ---: | ---: | ---: |
-| 0 | 375 | 11 | 0.189 | 9.292 |
-| 1 | 9 | 1 | 0.000 | 15.613 |
-| 2 | 7 | 1 | 0.000 | 15.613 |
-| 3 | 6 | 1 | 0.000 | 15.613 |
-
-### Multi-Metric Assessment of the Current Model
-
-The current checkpoint should be interpreted as an **operational real-data validation model**, not a final scientific model. Even so, the repo now reports performance across several metric families rather than a single number.
-
-#### 1. Contrastive Training Metrics
+The SSL objective behaved stably across the full 20-epoch run.
 
 | Metric | Train | Val |
 | --- | ---: | ---: |
-| InfoNCE loss | `1.391` | `1.354` |
-| Retrieval@1 | `0.242` | `0.259` |
-| Positive cosine similarity | `0.969` | `1.000` |
+| final InfoNCE loss | `0.0210` | `0.3247` |
+| final Retrieval@1 | `0.9999` | `0.9364` |
+| final positive cosine | `0.9192` | `0.9913` |
+| best val loss | epoch `18`, `0.3241` |  |
+| best val Retrieval@1 | epoch `11`, `0.9375` |  |
 
-#### 2. Embedding Structure Metrics
+Interpretation:
+
+- the optimization curve is healthy and monotonic
+- validation loss continued to improve late into training
+- train retrieval saturated early, so the current positive-pair task is likely somewhat easy on this subset
+
+### Sampled Downstream Evaluation
+
+To keep downstream analysis tractable and honest, the current representation results are reported on sampled windows rather than all `3.09M` windows:
+
+| Split | Windows | Embedding shape |
+| --- | ---: | --- |
+| train sample for embeddings | `50,000` | `(50000, 128)` |
+| clustering sample from train embeddings | `5,000` | `(5000, 128)` |
+| val sample | `5,000` | `(5000, 128)` |
+| test sample | `5,000` | `(5000, 128)` |
+
+### Clustering Metrics
+
+KMeans was run on a randomized `5,000`-window train embedding sample.
+
+| k | Silhouette | Davies-Bouldin | Cluster sizes |
+| --- | ---: | ---: | --- |
+| `3` | `0.1044` | `2.6063` | `1977, 1407, 1616` |
+| `4` | `0.1127` | `2.3267` | `1229, 1475, 1156, 1140` |
+| `5` | `0.1152` | `2.2106` | `973, 929, 1123, 1050, 925` |
+| `6` | `0.1107` | `2.1452` | `847, 830, 968, 944, 644, 767` |
+
+The selected clustering was `k = 5` by silhouette score.
+
+Interpretation:
+
+- geometric separation is present but not yet strong
+- the current clusters are better read as exploratory latent states than final phenotype claims
+
+### Phenotype-Level Clinical Separation
+
+Even with modest geometric separation, the latent states show clinically different outcome profiles on the sampled train windows:
+
+| Cluster | Windows | Stays | Mortality | ICU LOS mean |
+| --- | ---: | ---: | ---: | ---: |
+| `0` | `973` | `308` | `0.105` | `8.51` |
+| `1` | `929` | `265` | `0.221` | `11.68` |
+| `2` | `1123` | `222` | `0.252` | `16.68` |
+| `3` | `1050` | `319` | `0.366` | `11.52` |
+| `4` | `925` | `243` | `0.314` | `13.03` |
+
+Examples from the generated phenotype report:
+
+- Cluster `0`: lower mortality, relatively higher blood pressure signal
+- Cluster `3`: highest mortality, lower `SBP/DBP/MAP` and lower bicarbonate
+- Cluster `4`: renal-heavy pattern with high `BUN` and `creatinine`
+
+### Observation Robustness
+
+Validation windows were perturbed by random observation thinning with drop probability `0.3`, evaluated on `5,000` validation windows.
 
 | Metric | Value |
 | --- | ---: |
-| clustering method | `KMeans` |
-| selected `k` | `4` |
-| silhouette score | `0.946` |
-| Davies-Bouldin index | `0.956` |
-| cluster sizes | `375, 9, 7, 6` |
+| windows evaluated | `5,000` |
+| mean embedding drift (L2) | `5.9184` |
+| median embedding drift (L2) | `5.6726` |
+| mean embedding cosine | `0.8237` |
+| cluster stability rate | `0.7294` |
 
-#### 3. Observation Robustness Metrics
+Interpretation:
 
-Validation windows were perturbed by randomly thinning observed measurements with drop probability `0.3`.
+- the current encoder is **not** invariant to observation perturbation
+- this is scientifically useful: it shows the repo is now reporting a realistic robustness number rather than an artifact of a tiny smoke run
+- observation robustness remains an open target for improvement
 
-| Metric | Value |
-| --- | ---: |
-| windows evaluated | `29` |
-| mean embedding drift (L2) | `2.90e-07` |
-| median embedding drift (L2) | `2.90e-07` |
-| mean embedding cosine | `1.000` |
-| cluster stability rate | `1.000` |
+Current robustness output from this run:
 
-#### 4. Phenotype-Level Clinical Separation
+![Observation thinning robustness histogram](docs/assets/robustness_subset_train_20260421_gpu_v1.png)
 
-The current bounded run also produces phenotype summaries rather than only geometric embedding metrics:
+### Current Artifact References
 
-- cluster-level mortality rate
-- cluster-level ICU length of stay
-- cluster-level mean start and end hour
-- cluster-level physiology and observation-density profiles
-- within-stay transition matrices between latent states
+The current run writes the full metric trail needed to audit these numbers:
 
-This is the current minimum multi-metric contract for the repo:
-
-- optimization metrics from SSL training
-- representation metrics from retrieval and cosine agreement
-- structure metrics from clustering quality
-- robustness metrics under observation thinning
-- clinical summary metrics from phenotype evaluation
-
-Generated artifact references for that bounded run:
-
-- `artifacts/state_from_observation/embeddings/embedding_manifest.json`
+- `artifacts/state_from_observation/ssl_history.json`
+- `artifacts/state_from_observation/embeddings/train_embeddings.npy`
+- `artifacts/state_from_observation/embeddings/val_embeddings.npy`
 - `artifacts/state_from_observation/clusters/cluster_summary.json`
 - `artifacts/state_from_observation/evaluation/cluster_outcomes.csv`
+- `artifacts/state_from_observation/evaluation/evaluation_report.md`
 - `artifacts/state_from_observation/robustness/robustness_summary.json`
+- `artifacts/state_from_observation/robustness/embedding_drift_histogram.png`
 
 ## Reproducibility
 
@@ -338,7 +359,7 @@ That restriction is intentional. The repository is meant to read as one coherent
 This repo is in a strong **research software** state:
 
 - the end-to-end pipeline exists
-- synthetic and bounded real-data runs are working
+- synthetic, bounded, and subset-full-cohort real-data runs are working
 - the GitHub release, citation, license, and contribution metadata are in place
 
 What still belongs to future work rather than README overclaim:
