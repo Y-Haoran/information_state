@@ -25,6 +25,7 @@ def make_project_config(
     *,
     project_root: str | None = None,
     raw_root: str | None = None,
+    cohort_name: str = "all_adult_icu",
     window_hours: int = 24,
     window_stride_hours: int = 2,
     positive_window_gap_hours: int = 2,
@@ -40,6 +41,7 @@ def make_project_config(
     return ProjectConfig(
         project_root=root,
         raw_root=raw,
+        cohort_name=cohort_name,
         bin_hours=1,
         window_hours=window_hours,
         window_stride_hours=window_stride_hours,
@@ -221,6 +223,7 @@ def serialize_project_config(config: ProjectConfig) -> dict[str, Any]:
     return {
         "project_root": str(config.project_root),
         "raw_root": str(config.raw_root),
+        "cohort_name": config.cohort_name,
         "bin_hours": config.bin_hours,
         "window_hours": config.window_hours,
         "window_stride_hours": config.window_stride_hours,

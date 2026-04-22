@@ -93,6 +93,7 @@ python3 -m unittest discover -s tests
 ```bash
 python3 -m information_state.train_ssl \
   --raw-root /path/to/mimic-iv \
+  --cohort all_adult_icu \
   --build-data \
   --window-hours 24 \
   --window-stride-hours 2 \
@@ -105,10 +106,10 @@ python3 -m information_state.train_ssl \
 Then run the downstream stages:
 
 ```bash
-python3 -m information_state.extract_embeddings --split train val --seed 7
-python3 -m information_state.cluster_states --split train --k 4 --seed 7
-python3 -m information_state.evaluate_phenotypes
-python3 -m information_state.evaluate_observation_robustness --split val --seed 7
+python3 -m information_state.extract_embeddings --cohort all_adult_icu --split train val --seed 7
+python3 -m information_state.cluster_states --cohort all_adult_icu --split train --k 4 --seed 7
+python3 -m information_state.evaluate_phenotypes --cohort all_adult_icu
+python3 -m information_state.evaluate_observation_robustness --cohort all_adult_icu --split val --seed 7
 ```
 
 After editable install, the same workflow is also exposed as console scripts:
@@ -119,12 +120,41 @@ After editable install, the same workflow is also exposed as console scripts:
 - `information-state-evaluate`
 - `information-state-robustness`
 
+### 4. Run the AKI-Specific Cohort
+
+The repo now supports an AKI-only cohort path via `--cohort aki_kdigo`. This keeps the model unchanged and only changes the stay selection plus downstream artifacts.
+
+Current AKI cohort builder:
+
+- uses KDIGO-style serum-creatinine criteria
+- adds urine-output criteria when stay-level weight can be resolved from ICU charted weights
+- writes AKI onset/stage fields into both `cohort.csv` and `window_metadata.csv`
+- stores AKI artifacts separately under `artifacts/state_from_observation/aki_kdigo/`
+
+Example:
+
+```bash
+python3 -m information_state.train_ssl \
+  --raw-root /path/to/mimic-iv \
+  --cohort aki_kdigo \
+  --build-data \
+  --epochs 20 \
+  --batch-size 32 \
+  --seed 7
+```
+
 ## Expected Outputs
 
-The main artifact root is:
+The default artifact root is:
 
 ```text
 artifacts/state_from_observation/
+```
+
+For non-default cohorts, artifacts are namespaced under that root. Example:
+
+```text
+artifacts/state_from_observation/aki_kdigo/
 ```
 
 A complete run produces outputs like:

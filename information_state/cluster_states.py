@@ -26,6 +26,7 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     """Parse CLI arguments for clustering."""
     parser = argparse.ArgumentParser(description="Cluster latent state embeddings into candidate phenotypes.")
     parser.add_argument("--project-root", type=str, default=None)
+    parser.add_argument("--cohort", type=str, default="all_adult_icu")
     parser.add_argument("--split", type=str, default="train")
     parser.add_argument("--embeddings-path", type=str, default=None)
     parser.add_argument("--metadata-path", type=str, default=None)
@@ -37,7 +38,7 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
 def main(argv: Sequence[str] | None = None) -> None:
     """Run clustering over extracted embeddings and save aligned assignments."""
     args = parse_args(argv)
-    config = make_project_config(project_root=args.project_root, random_seed=args.seed)
+    config = make_project_config(project_root=args.project_root, cohort_name=args.cohort, random_seed=args.seed)
     set_global_seed(args.seed)
     embeddings_path = Path(args.embeddings_path).resolve() if args.embeddings_path else config.embeddings_dir / f"{args.split}_embeddings.npy"
     metadata_path = Path(args.metadata_path).resolve() if args.metadata_path else resolve_existing_table(

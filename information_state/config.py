@@ -22,6 +22,7 @@ class FeatureSpec:
 class ProjectConfig:
     project_root: Path = field(default_factory=lambda: Path(__file__).resolve().parents[1])
     raw_root: Path | None = None
+    cohort_name: str = "all_adult_icu"
     bin_hours: int = 1
     window_hours: int = 24
     window_stride_hours: int = 2
@@ -44,6 +45,11 @@ class ProjectConfig:
             self.raw_root = Path(env_root).resolve() if env_root else self.project_root / "data"
         else:
             self.raw_root = Path(self.raw_root).resolve()
+        self.cohort_name = self.cohort_name.strip().lower().replace("-", "_")
+        if self.cohort_name == "aki":
+            self.cohort_name = "aki_kdigo"
+        if self.cohort_name not in {"all_adult_icu", "aki_kdigo"}:
+            raise ValueError(f"Unsupported cohort_name={self.cohort_name!r}.")
 
         hour_fields = {
             "window_hours": self.window_hours,
@@ -83,6 +89,10 @@ class ProjectConfig:
         return self.project_root / "artifacts"
 
     @property
+    def cohort_slug(self) -> str:
+        return self.cohort_name
+
+    @property
     def catalog_path(self) -> Path:
         return self.artifacts_dir / "resolved_catalog.json"
 
@@ -100,7 +110,10 @@ class ProjectConfig:
 
     @property
     def state_from_observation_dir(self) -> Path:
-        return self.artifacts_dir / "state_from_observation"
+        base_dir = self.artifacts_dir / "state_from_observation"
+        if self.cohort_name == "all_adult_icu":
+            return base_dir
+        return base_dir / self.cohort_slug
 
     @property
     def observation_cohort_path(self) -> Path:

@@ -12,6 +12,7 @@ from numpy.lib.format import open_memmap
 from torch.utils.data import Dataset
 from tqdm import tqdm
 
+from .aki_cohort import annotate_aki_stays
 from .config import ProjectConfig
 from .feature_catalog import build_catalog, load_catalog
 
@@ -78,6 +79,11 @@ def build_observation_cohort(config: ProjectConfig) -> pd.DataFrame:
     cohort["in_hospital_mortality"] = cohort["hospital_expire_flag"].fillna(0).astype(int)
     cohort["icu_los_days"] = pd.to_numeric(cohort["los"], errors="coerce").fillna(0.0).astype(float)
 
+    if config.cohort_name == "aki_kdigo":
+        catalog = load_catalog(config) if config.catalog_path.exists() else build_catalog(config)
+        cohort = annotate_aki_stays(cohort, config, catalog)
+        cohort = cohort[cohort["aki"] == 1].copy()
+
     if config.max_stays is not None:
         cohort = cohort.sort_values(["intime", "stay_id"]).head(config.max_stays).copy()
 
@@ -121,6 +127,15 @@ def build_observation_cohort(config: ProjectConfig) -> pd.DataFrame:
 
 def load_observation_cohort(config: ProjectConfig) -> pd.DataFrame:
     expected_columns = {"in_hospital_mortality", "icu_los_days", "stay_hours"}
+    if config.cohort_name == "aki_kdigo":
+        expected_columns = expected_columns | {
+            "aki",
+            "aki_stage",
+            "aki_creatinine",
+            "aki_urine_output",
+            "aki_onset_hour",
+            "aki_onset_bin",
+        }
     if config.observation_cohort_path.exists():
         cohort = pd.read_csv(
             config.observation_cohort_path,
@@ -133,6 +148,13 @@ def load_observation_cohort(config: ProjectConfig) -> pd.DataFrame:
 
 def load_window_metadata(config: ProjectConfig) -> pd.DataFrame:
     expected_columns = {"window_index", "end_bin", "start_hour", "end_hour"}
+    if config.cohort_name == "aki_kdigo":
+        expected_columns = expected_columns | {
+            "aki",
+            "aki_stage",
+            "aki_onset_hour",
+            "window_contains_aki_onset",
+        }
     if config.observation_window_metadata_path.exists():
         windows = pd.read_csv(config.observation_window_metadata_path)
         if expected_columns.issubset(windows.columns):
@@ -550,6 +572,7 @@ def build_hourly_observation_dataset(config: ProjectConfig) -> tuple[pd.DataFram
         config.observation_temp_last_time_path.unlink()
 
     metadata = {
+        "cohort_name": config.cohort_name,
         "dynamic_feature_names": [feature["name"] for feature in features],
         "window_hours": config.window_hours,
         "window_stride_hours": config.window_stride_hours,
@@ -559,6 +582,11 @@ def build_hourly_observation_dataset(config: ProjectConfig) -> tuple[pd.DataFram
         "total_stays": int(len(cohort)),
         "total_bins": total_bins,
     }
+    if "aki" in cohort.columns:
+        metadata["cohort_summary"] = {
+            "aki_stays": int(cohort["aki"].sum()),
+            "aki_stage_distribution": cohort["aki_stage"].value_counts().sort_index().astype(int).to_dict(),
+        }
 
     with open(config.observation_metadata_path, "w", encoding="utf-8") as handle:
         json.dump(metadata, handle, indent=2)
@@ -573,6 +601,23 @@ def build_window_metadata(config: ProjectConfig) -> pd.DataFrame:
     cohort = load_observation_cohort(config)
     records = []
     window_id = 0
+    base_defaults = {
+        "aki": 0,
+        "aki_stage": 0,
+        "aki_creatinine": 0,
+        "aki_stage_creatinine": 0,
+        "aki_urine_output": 0,
+        "aki_stage_urine_output": 0,
+        "aki_onset_bin": np.nan,
+        "aki_onset_hour": np.nan,
+        "aki_onset_hour_creatinine": np.nan,
+        "aki_onset_hour_urine_output": np.nan,
+        "aki_baseline_creatinine": np.nan,
+        "aki_weight_kg": np.nan,
+    }
+    for column, default_value in base_defaults.items():
+        if column not in cohort.columns:
+            cohort[column] = default_value
 
     for row in tqdm(
         cohort[
@@ -585,6 +630,18 @@ def build_window_metadata(config: ProjectConfig) -> pd.DataFrame:
                 "num_bins",
                 "in_hospital_mortality",
                 "icu_los_days",
+                "aki",
+                "aki_stage",
+                "aki_creatinine",
+                "aki_stage_creatinine",
+                "aki_urine_output",
+                "aki_stage_urine_output",
+                "aki_onset_bin",
+                "aki_onset_hour",
+                "aki_onset_hour_creatinine",
+                "aki_onset_hour_urine_output",
+                "aki_baseline_creatinine",
+                "aki_weight_kg",
             ]
         ].itertuples(index=False),
         total=len(cohort),
@@ -616,7 +673,41 @@ def build_window_metadata(config: ProjectConfig) -> pd.DataFrame:
                 "positive_end_bin": np.where(has_positive, positive_starts + config.window_bins, -1).astype(np.int32),
                 "in_hospital_mortality": int(row.in_hospital_mortality),
                 "icu_los_days": float(row.icu_los_days),
+                "aki": int(row.aki),
+                "aki_stage": int(row.aki_stage),
+                "aki_creatinine": int(row.aki_creatinine),
+                "aki_stage_creatinine": int(row.aki_stage_creatinine),
+                "aki_urine_output": int(row.aki_urine_output),
+                "aki_stage_urine_output": int(row.aki_stage_urine_output),
+                "aki_onset_bin": float(row.aki_onset_bin) if pd.notna(row.aki_onset_bin) else np.nan,
+                "aki_onset_hour": float(row.aki_onset_hour) if pd.notna(row.aki_onset_hour) else np.nan,
+                "aki_onset_hour_creatinine": (
+                    float(row.aki_onset_hour_creatinine) if pd.notna(row.aki_onset_hour_creatinine) else np.nan
+                ),
+                "aki_onset_hour_urine_output": (
+                    float(row.aki_onset_hour_urine_output) if pd.notna(row.aki_onset_hour_urine_output) else np.nan
+                ),
+                "aki_baseline_creatinine": (
+                    float(row.aki_baseline_creatinine) if pd.notna(row.aki_baseline_creatinine) else np.nan
+                ),
+                "aki_weight_kg": float(row.aki_weight_kg) if pd.notna(row.aki_weight_kg) else np.nan,
             }
+        )
+        onset_bin = stay_frame["aki_onset_bin"]
+        stay_frame["window_contains_aki_onset"] = np.where(
+            onset_bin.notna(),
+            (stay_frame["start_bin"] <= onset_bin) & (onset_bin < stay_frame["end_bin"]),
+            False,
+        ).astype(int)
+        stay_frame["hours_since_aki_onset_start"] = np.where(
+            stay_frame["aki_onset_hour"].notna(),
+            stay_frame["start_hour"] - stay_frame["aki_onset_hour"],
+            np.nan,
+        )
+        stay_frame["hours_since_aki_onset_end"] = np.where(
+            stay_frame["aki_onset_hour"].notna(),
+            stay_frame["end_hour"] - stay_frame["aki_onset_hour"],
+            np.nan,
         )
         records.append(stay_frame)
         window_id += len(starts)
@@ -642,6 +733,21 @@ def build_window_metadata(config: ProjectConfig) -> pd.DataFrame:
                 "positive_end_bin",
                 "in_hospital_mortality",
                 "icu_los_days",
+                "aki",
+                "aki_stage",
+                "aki_creatinine",
+                "aki_stage_creatinine",
+                "aki_urine_output",
+                "aki_stage_urine_output",
+                "aki_onset_bin",
+                "aki_onset_hour",
+                "aki_onset_hour_creatinine",
+                "aki_onset_hour_urine_output",
+                "aki_baseline_creatinine",
+                "aki_weight_kg",
+                "window_contains_aki_onset",
+                "hours_since_aki_onset_start",
+                "hours_since_aki_onset_end",
             ]
         )
 

@@ -31,6 +31,7 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Measure embedding stability under observation perturbations.")
     parser.add_argument("--project-root", type=str, default=None)
     parser.add_argument("--raw-root", type=str, default=None)
+    parser.add_argument("--cohort", type=str, default="all_adult_icu")
     parser.add_argument("--checkpoint-path", type=str, default=None)
     parser.add_argument("--cluster-model-path", type=str, default=None)
     parser.add_argument("--build-data", action="store_true")
@@ -125,6 +126,7 @@ def main(argv: Sequence[str] | None = None) -> None:
     config = make_project_config(
         project_root=args.project_root,
         raw_root=args.raw_root,
+        cohort_name=args.cohort,
         window_hours=args.window_hours,
         window_stride_hours=args.window_stride_hours,
         positive_window_gap_hours=args.positive_window_gap_hours,

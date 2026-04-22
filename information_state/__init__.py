@@ -5,6 +5,7 @@ __version__ = "0.1.0"
 __all__ = [
     "__version__",
     "config",
+    "aki_cohort",
     "feature_catalog",
     "observation_data",
     "state_from_observation",

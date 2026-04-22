@@ -19,6 +19,7 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     """Parse CLI arguments for phenotype evaluation."""
     parser = argparse.ArgumentParser(description="Evaluate learned phenotype clusters against physiology and outcomes.")
     parser.add_argument("--project-root", type=str, default=None)
+    parser.add_argument("--cohort", type=str, default="all_adult_icu")
     parser.add_argument("--assignments-path", type=str, default=None)
     parser.add_argument("--max-windows", type=int, default=None)
     return parser.parse_args(argv)
@@ -27,7 +28,7 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
 def main(argv: Sequence[str] | None = None) -> None:
     """Generate phenotype summaries from clustered window assignments."""
     args = parse_args(argv)
-    config = make_project_config(project_root=args.project_root)
+    config = make_project_config(project_root=args.project_root, cohort_name=args.cohort)
     assignments_path = Path(args.assignments_path).resolve() if args.assignments_path else resolve_existing_table(
         config.clusters_dir / "cluster_assignments.parquet"
     )
