@@ -10,6 +10,8 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from sklearn.decomposition import PCA
+from sklearn.manifold import TSNE
 
 
 AKI_HEATMAP_FEATURES = [
@@ -191,6 +193,92 @@ def plot_aki_trajectories(trajectories: pd.DataFrame, output_path: Path) -> None
     plt.close(fig)
 
 
+def plot_aki_phenotype_map(
+    embeddings: np.ndarray,
+    assignments: pd.DataFrame,
+    trajectories: pd.DataFrame,
+    output_path: Path,
+    random_state: int = 7,
+) -> None:
+    pca = PCA(n_components=min(30, embeddings.shape[1]), random_state=random_state)
+    embedding_pca = pca.fit_transform(embeddings)
+    tsne = TSNE(
+        n_components=2,
+        perplexity=35,
+        learning_rate="auto",
+        init="pca",
+        random_state=random_state,
+    )
+    embedding_2d = tsne.fit_transform(embedding_pca)
+
+    plot_df = assignments[["cluster"]].copy()
+    plot_df["x"] = embedding_2d[:, 0]
+    plot_df["y"] = embedding_2d[:, 1]
+
+    colors = ["#1d3557", "#e76f51", "#2a9d8f", "#9d4edd", "#f4a261", "#457b9d"]
+    clusters = sorted(plot_df["cluster"].unique())
+
+    fig = plt.figure(figsize=(14.5, 5.6))
+    grid = fig.add_gridspec(1, 2, width_ratios=[1.25, 1.0], wspace=0.24)
+    ax_map = fig.add_subplot(grid[0, 0])
+    right_grid = grid[0, 1].subgridspec(3, 1, hspace=0.28)
+    trajectory_axes = [fig.add_subplot(right_grid[i, 0]) for i in range(3)]
+
+    for color, cluster in zip(colors, clusters):
+        subset = plot_df[plot_df["cluster"] == cluster]
+        ax_map.scatter(
+            subset["x"],
+            subset["y"],
+            s=10,
+            alpha=0.55,
+            color=color,
+            label=f"Cluster {cluster}",
+            edgecolors="none",
+        )
+        centroid_x = subset["x"].mean()
+        centroid_y = subset["y"].mean()
+        ax_map.text(
+            centroid_x,
+            centroid_y,
+            f"C{cluster}",
+            fontsize=10,
+            fontweight="bold",
+            ha="center",
+            va="center",
+            bbox={"boxstyle": "round,pad=0.18", "fc": "white", "ec": color, "alpha": 0.9},
+        )
+
+    ax_map.set_title("Latent state map (t-SNE)")
+    ax_map.set_xlabel("Component 1")
+    ax_map.set_ylabel("Component 2")
+    ax_map.grid(alpha=0.18)
+    ax_map.legend(frameon=False, loc="best")
+
+    feature_order = ["creatinine", "urine_output_ml", "map"]
+    feature_titles = {
+        "creatinine": "Creatinine",
+        "urine_output_ml": "Urine output",
+        "map": "MAP",
+    }
+
+    for axis, feature in zip(trajectory_axes, feature_order):
+        subset = trajectories[trajectories["feature"] == feature].sort_values(["cluster", "hour"])
+        for color, cluster in zip(colors, clusters):
+            curve = subset[subset["cluster"] == cluster]
+            axis.plot(curve["hour"], curve["value_mean"], linewidth=2, color=color, label=f"Cluster {cluster}")
+        axis.set_title(feature_titles[feature], loc="left", fontsize=10)
+        axis.set_xlabel("Hour in window")
+        axis.set_ylabel("Mean value")
+        axis.grid(alpha=0.25)
+
+    trajectory_axes[0].legend(frameon=False, ncol=min(3, len(clusters)), fontsize=8, loc="upper right")
+
+    fig.suptitle("Phenotype Discovery Map", fontsize=14, y=1.02)
+    fig.tight_layout()
+    fig.savefig(output_path, dpi=180, bbox_inches="tight")
+    plt.close(fig)
+
+
 def main() -> None:
     args = parse_args()
     cohort_dir = state_dir(args.run_root, args.cohort)
@@ -204,7 +292,15 @@ def main() -> None:
         outcomes = pd.read_csv(cohort_dir / "evaluation" / "aki_cluster_outcomes.csv")
         profiles = pd.read_csv(cohort_dir / "evaluation" / "aki_cluster_feature_profiles.csv")
         trajectories = pd.read_csv(cohort_dir / "evaluation" / "aki_cluster_trajectory_profiles.csv")
+        embeddings = np.load(cohort_dir / "embeddings" / "train_embeddings.npy")
+        assignments = pd.read_csv(cohort_dir / "clusters" / "cluster_assignments.csv")
 
+        plot_aki_phenotype_map(
+            embeddings,
+            assignments,
+            trajectories,
+            output_dir / f"aki_phenotype_map_{args.tag}.png",
+        )
         plot_aki_cluster_summary(outcomes, output_dir / f"aki_cluster_summary_{args.tag}.png")
         plot_aki_heatmap(profiles, output_dir / f"aki_cluster_heatmap_{args.tag}.png")
         plot_aki_trajectories(trajectories, output_dir / f"aki_cluster_trajectories_{args.tag}.png")

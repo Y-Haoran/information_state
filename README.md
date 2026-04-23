@@ -60,20 +60,14 @@ The most complete current run is a full `aki_kdigo` end-to-end pilot:
 - `5,000` robustness-evaluated validation windows
 
 <p align="center">
-  <img src="docs/assets/training_curve_aki_kdigo_20260422_gpu_v2_parallel.png" width="48%" alt="AKI SSL training curves">
-  <img src="docs/assets/aki_cluster_summary_aki_kdigo_20260422_gpu_v2_parallel.png" width="48%" alt="AKI cluster outcome and criterion summary">
-</p>
-<p align="center">
-  <img src="docs/assets/aki_cluster_trajectories_aki_kdigo_20260422_gpu_v2_parallel.png" width="48%" alt="AKI cluster trajectory profiles">
-  <img src="docs/assets/robustness_aki_kdigo_20260422_gpu_v2_parallel.png" width="48%" alt="AKI robustness histogram">
+  <img src="docs/assets/aki_phenotype_map_aki_kdigo_20260422_gpu_v2_parallel.png" width="96%" alt="AKI phenotype discovery map">
 </p>
 
-These figures show four different parts of the current story:
+This figure is the fastest way to understand the current result:
 
-- training is stable over the AKI pilot run
-- clusters separate meaningfully in mortality and KDIGO criterion pattern
-- clusters differ in creatinine, urine output, and MAP trajectory profile
-- embeddings remain moderately stable under observation thinning
+- the left panel shows a `t-SNE` map of the learned latent AKI state space
+- the right panel shows that those clusters differ in clinically interpretable 24-hour trajectories
+- together, the two views show both **representation structure** and **clinical meaning**
 
 ## What This Repo Is Not Claiming Yet
 
@@ -271,9 +265,16 @@ Provisional phenotype interpretation:
 - Cluster `1`: creatinine-dominant, lab-dominant renal state with less urine-output involvement and intermediate mortality
 - Cluster `2`: hemodynamic-metabolic AKI state with lower MAP, lower bicarbonate, higher BUN/potassium, and the highest mortality
 
-AKI cluster signal heatmap:
+Supporting AKI figures:
 
-![AKI cluster signal heatmap](docs/assets/aki_cluster_heatmap_aki_kdigo_20260422_gpu_v2_parallel.png)
+<p align="center">
+  <img src="docs/assets/training_curve_aki_kdigo_20260422_gpu_v2_parallel.png" width="48%" alt="AKI SSL training curves">
+  <img src="docs/assets/aki_cluster_summary_aki_kdigo_20260422_gpu_v2_parallel.png" width="48%" alt="AKI cluster outcome and criterion summary">
+</p>
+<p align="center">
+  <img src="docs/assets/aki_cluster_heatmap_aki_kdigo_20260422_gpu_v2_parallel.png" width="48%" alt="AKI cluster signal heatmap">
+  <img src="docs/assets/robustness_aki_kdigo_20260422_gpu_v2_parallel.png" width="48%" alt="AKI robustness histogram">
+</p>
 
 #### AKI Observation Robustness
 
